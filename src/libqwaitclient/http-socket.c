@@ -47,13 +47,13 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
   this->host = host;
   this->port = port;
   this->inet_family = AF_INET;
-  this->socket_fd = socket(this->inet_family, SOCK_STREAM, IPPROTO_TCP);
+  this->socket_fd = 0;
   this->connected = 0;
+  
+  this->socket_fd = socket(this->inet_family, SOCK_STREAM, IPPROTO_TCP);
   if (this->socket_fd < 0)
-    {
-      this->socket_fd = 0;
-      return -1;
-    }
+    return this->socket_fd = 0, -1;
+  
   return 0;
 }
 
@@ -79,7 +79,7 @@ void libqwaitclient_http_socket_destroy(_this_)
  */
 int libqwaitclient_http_socket_connect(_this_)
 {
-  char port[10];
+  char port[6];
   struct addrinfo hints;
   struct addrinfo* hosts;
   struct addrinfo* host;
@@ -89,14 +89,18 @@ int libqwaitclient_http_socket_connect(_this_)
   if (this->connected)
     return 0;
   
+  /* Resolve hostname and create socket address structure. */
   memset(&hints, 0, sizeof(hints));
-  
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   sprintf(port, "%u", (unsigned int)(this->port));
   r = getaddrinfo(this->host, port, &hints, &hosts);
   if (r)
     {
+      /* Not really an excellent translation, but for some
+       * reason these are POSIX exceptions that do not
+       * appear in errno.h. And not translating then would
+       * complicate the client's code and the API. */
       switch (r)
 	{
 	case EAI_ADDRFAMILY: return errno = EHOSTUNREACH, -1;
@@ -113,9 +117,12 @@ int libqwaitclient_http_socket_connect(_this_)
 	}
     }
   
+  /* Test all found resolutions. */
   errno = EHOSTUNREACH, r = -1;
   for (host = hosts; host != NULL; host = host->ai_next)
     {
+      /* We have precreated the socket so we only need the
+       * recreate it if the INET family changes. */
       if (host->ai_family != this->inet_family)
 	{
 	  this->inet_family = host->ai_family;
@@ -124,6 +131,8 @@ int libqwaitclient_http_socket_connect(_this_)
 	  if (this->socket_fd < 0)
 	    continue;
 	}
+      
+      /* Try to connect to the server. */
       r = connect(this->socket_fd, host->ai_addr, host->ai_addrlen);
       if (r < 0)
 	continue;
