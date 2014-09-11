@@ -7,4 +7,9 @@ obj/
 *~
 *.bak
 *.sw[op]
+*.o
+*.out
+*.so
+*.su
+*.gch
 
