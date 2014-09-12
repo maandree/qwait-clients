@@ -589,10 +589,11 @@ int libqwaitclient_http_message_read(_this_, int fd)
  */
 size_t libqwaitclient_http_message_compose_size(const _this_)
 {
-  size_t rc = 2 + this->content_size;
+  size_t rc = strlen(this->top) + 2;
   size_t i;
   for (i = 0; i < this->header_count; i++)
     rc += strlen(this->headers[i]) + 2;
+  rc += 2 + this->content_size;
   return rc * sizeof(char);
 }
 
@@ -606,6 +607,12 @@ size_t libqwaitclient_http_message_compose_size(const _this_)
 void libqwaitclient_http_message_compose(const _this_, char* restrict data)
 {
   size_t i, n;
+  
+  n = strlen(this->top);
+  memcpy(data, this->top, n * sizeof(char));
+  data += n;
+  buf_set_next(data, char, '\r');
+  buf_set_next(data, char, '\n');
   
   for (i = 0; i < this->header_count; i++)
     {
