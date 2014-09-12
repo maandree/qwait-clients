@@ -103,7 +103,7 @@ typedef struct libqwaitclient_http_message
   
   /**
    * 0 while reading the status/request,
-   * 1 while reading headers,
+   * 1 while reading the headers,
    * 2 while reading the content,
    * and 3 when done (internal data)
    */

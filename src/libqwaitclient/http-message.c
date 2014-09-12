@@ -519,6 +519,9 @@ int libqwaitclient_http_message_read(_this_, int fd)
 	  
 	  /* Create and store top line. */
 	  try (store_top(this, length + 1));
+	  
+	  /* Mark end of stage, next stage is getting the headers. */
+	  this->stage = 1;
 	}
       
       
