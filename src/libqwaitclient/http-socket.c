@@ -47,6 +47,8 @@
  */
 int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t port)
 {
+  int saved_errno;
+  
   this->host = host;
   this->port = port;
   this->inet_family = AF_INET;
@@ -57,11 +59,21 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
   this->send_buffer_size = 0;
   this->send_buffer_ptr = 0;
   
+  if (libqwaitclient_http_message_initialise(&(this->message)) < 0)
+    goto fail;
+  
   this->socket_fd = socket(this->inet_family, SOCK_STREAM, IPPROTO_TCP);
   if (this->socket_fd < 0)
-    return this->socket_fd = 0, -1;
+    goto fail;
   
   return 0;
+  
+ fail:
+  saved_errno = errno;
+  this->socket_fd = 0;
+  libqwaitclient_http_message_destroy(&(this->message));
+  errno = saved_errno;
+  return -1;
 }
 
 
@@ -77,6 +89,7 @@ void libqwaitclient_http_socket_destroy(_this_)
     close(this->socket_fd), this->socket_fd = 0;
   free(this->send_buffer), this->send_buffer = NULL;
   this->send_buffer_ptr = this->send_buffer_size = this->send_buffer_alloc = 0;
+  libqwaitclient_http_message_destroy(&(this->message));
 }
 
 

@@ -88,7 +88,7 @@ void libqwaitclient_http_message_zero_initialise(_this_)
  */
 void libqwaitclient_http_message_destroy(_this_)
 {
-  free(this->top), this->content = NULL;
+  free(this->top), this->top = NULL;
   if (this->headers != NULL)
     {
       size_t i;
@@ -243,7 +243,7 @@ static void unbuffer_beginning(_this_, size_t length, int update_ptr)
 static int initialise_content(_this_)
 {
   /* Remove the \n (end of empty line) we found from the buffer. */
-  unbuffer_beginning(this, 1, 1);
+  unbuffer_beginning(this, 2, 1);
   
   /* Get the length of the content. */
   if (get_content_length(this) < 0)
@@ -340,7 +340,7 @@ static int continue_read(_this_, int fd)
     {
       /* grow the buffer, */
       try (libqwaitclient_http_message_extend_buffer(this));
-	  
+      
       /* and recalculate how much space we have left. */
       n = this->buffer_size - this->buffer_ptr;
     }
@@ -409,9 +409,11 @@ static int receive_known_length(_this_)
  */
 static int receive_chunked_transfer(_this_)
 {
-  char* old_content = this->content;
   size_t length, chunk_size, i;
+  char* old_content;
   char* p;
+  
+ again:
   
   /* Wait for the line, that tells us how large the chunk is, has been received. */
   p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char));
@@ -420,7 +422,7 @@ static int receive_chunked_transfer(_this_)
   
   /* Verify that the line is CRLF-terminated. */
   length = (size_t)(p - this->buffer);
-  if ((length == 0) || (*(p - 1) != '\r'))
+  if ((length > 0) && (*(p - 1) == '\r'))
     length--;
   else
     return -2;
@@ -428,19 +430,23 @@ static int receive_chunked_transfer(_this_)
   /* Parse the size of the chunk and validate it. */
   chunk_size = 0;
   for (i = 0; i < length; i++)
-    if (('0' <= this->buffer[i]) && (this->buffer[i] <= '9'))
-      chunk_size = chunk_size * 10 - (this->buffer[i] & 15);
-    else
-      return -2; /* Malformated value, enters unrecoverable state. */
-  chunk_size = -chunk_size;
+    {
+      char c = this->buffer[i];
+      chunk_size <<= 4;
+      if      (('0' <= c) && (c <= '9'))  chunk_size |= c - '0' + 0;
+      else if (('a' <= c) && (c <= 'f'))  chunk_size |= c - 'a' + 10;
+      else if (('A' <= c) && (c <= 'F'))  chunk_size |= c - 'A' + 10;
+      else
+	return -2; /* Malformated value, enters unrecoverable state. */
+    }
   
   /* Wait for the chunk to be fully received. */
   if (this->buffer_ptr < length + 2 + chunk_size + 2)
     return 0;
   
   /* Verify that the chunk is CRLF-terminated. */
-  if (this->buffer[this->buffer_ptr - 2] != '\r')  return -2;
-  if (this->buffer[this->buffer_ptr - 1] != '\n')  return -2;
+  if (this->buffer[length + 2 + chunk_size + 0] != '\r')  return -2;
+  if (this->buffer[length + 2 + chunk_size + 1] != '\n')  return -2;
   
   /* Are we done yet? */
   if (chunk_size == 0)
@@ -456,6 +462,7 @@ static int receive_chunked_transfer(_this_)
   
   /* Copy the content from the buffer to the content storage. */
   this->content_size = this->content_ptr + chunk_size;
+  old_content = this->content;
   if (xrealloc(this->content, this->content_size, char))
     {
       this->content = old_content;
@@ -466,6 +473,11 @@ static int receive_chunked_transfer(_this_)
   
   /* Remove the chunk from the buffer. */
   unbuffer_beginning(this, length + 2 + chunk_size + 2, 1);
+  
+  /* Do we have more to process? */
+  if (this->buffer_ptr > 0)
+    goto again;
+  
   return 0;
 }
 
@@ -508,11 +520,11 @@ int libqwaitclient_http_message_read(_this_, int fd)
 	  /* Check that the line has been fully received. */
 	  p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char));
 	  if (p == NULL)
-	    continue;
+	    goto need_more;
 	  
 	  /* Verift that the line is CRLF-terminated. */
 	  length = (size_t)(p - this->buffer);
-	  if ((length == 0) || (*(p - 1) != '\r'))
+	  if ((length > 0) && (*(p - 1) == '\r'))
 	    length--;
 	  else
 	    return -2;
@@ -532,7 +544,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
 	{
 	  /* Verift that the line is CRLF-terminated. */
 	  length = (size_t)(p - this->buffer);
-	  if ((length == 0) || (*(p - 1) != '\r'))
+	  if ((length > 0) && (*(p - 1) == '\r'))
 	    length--;
 	  else
 	    return -2;
@@ -576,6 +588,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
       
       
       /* If stage 2 was not completed. */
+    need_more:
       
       /* Continue reading from the socket into the buffer. */
       try (continue_read(this, fd));
