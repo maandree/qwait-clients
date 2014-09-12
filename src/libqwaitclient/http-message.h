@@ -23,6 +23,25 @@
 
 
 /**
+ * Content transfer encoding enum for HTTP messages
+ */
+typedef enum libqwaitclient_http_message_transfer_encoding
+  {
+    /**
+     * The length of the complete content is sent
+     */
+    KNOWN_LENGTH,
+    
+    /**
+     * The content is sent in small chucks and ends when
+     * an empty chunk is sent by the server
+     */
+    CHUNKED_TRANSFER
+    
+  } libqwaitclient_http_message_transfer_encoding_t;
+
+
+/**
  * Message passed between the server and the client
  */
 typedef struct libqwaitclient_http_message /* TODO top line */
@@ -71,6 +90,11 @@ typedef struct libqwaitclient_http_message /* TODO top line */
    * The number of bytes used in `buffer` (internal data)
    */
   size_t buffer_ptr;
+  
+  /**
+   * The transfer encoding for the content (internal data)
+   */
+  libqwaitclient_http_message_transfer_encoding_t transfer_encoding;
   
   /**
    * 0 while reading headers, 1 while reading content, and 2 when done (internal data)

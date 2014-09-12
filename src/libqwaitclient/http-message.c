@@ -45,6 +45,7 @@ int libqwaitclient_http_message_initialise(_this_)
   this->content_ptr = 0;
   this->buffer_size = 128;
   this->buffer_ptr = 0;
+  this->transfer_encoding = KNOWN_LENGTH;
   this->stage = 0;
   if (xmalloc(this->buffer, this->buffer_size, char))
     {
@@ -72,6 +73,7 @@ void libqwaitclient_http_message_zero_initialise(_this_)
   this->buffer = NULL;
   this->buffer_size = 0;
   this->buffer_ptr = 0;
+  this->transfer_encoding = KNOWN_LENGTH;
   this->stage = 0;
 }
 
@@ -149,6 +151,7 @@ static void reset_message(_this_)
   this->content = NULL;
   this->content_size = 0;
   this->content_ptr = 0;
+  this->transfer_encoding = KNOWN_LENGTH;
 }
 
 
@@ -164,8 +167,11 @@ static int get_content_length(_this_)
   size_t i;
   
   for (i = 0; i < this->header_count; i++)
-    if (strstr(this->headers[i], "Content-Length: ") == this->headers[i])
+    if (startswith(this->headers[i], "Content-Length: "))
       {
+	/* We know how long the content should be. */
+	this->transfer_encoding = KNOWN_LENGTH;
+
 	/* Store the message length. */
 	header = this->headers[i] + strlen("Content-Length: ");
 	this->content_size = atol(header);
@@ -175,8 +181,13 @@ static int get_content_length(_this_)
 	  if ((*header < '0') || ('9' < *header))
 	    return -2; /* Malformated value, enters unrecoverable state. */
 	
-	/* Stop searching for the ‘Content-Length’ header, we have found and parsed it. */
+	/* Stop searching for headers, we have found one. */
 	break;
+      }
+    else if (strequals(this->headers[i], "Transfer-Encoding: chunked"))
+      {
+	/* We will receive the content in chunkes. */
+	this->transfer_encoding = CHUNKED_TRANSFER;
       }
   
   return 0;
@@ -283,7 +294,7 @@ static int store_header(_this_, size_t length)
  * Continue reading from the socket into the buffer
  * 
  * @param   this  The message
- * @param   fd    The file descriptor of the socekt
+ * @param   fd    The file descriptor of the socket
  * @return        The return value follows the rules of `libqwaitclient_http_message_read`
  */
 static int continue_read(_this_, int fd)
@@ -322,10 +333,115 @@ static int continue_read(_this_, int fd)
 
 
 /**
- * Read the next message from a file descriptor of the socekt
+ * Receive a part of the content, assuming the content's length is known
  * 
  * @param   this  Memory slot in which to store the new message
- * @param   fd    The file descriptor of the socekt
+ * @return        Follows the rules of `libqwaitclient_http_message_read`
+ *                with one exception, if zero is returned the message
+ *                has not been completely read, if 1 is returned the
+ *                message has been completely read
+ */
+static int receive_known_length(_this_)
+{
+  if (this->content_size > 0)
+    {
+      /* How much of the content that has not yet been filled. */
+      size_t need = this->content_size - this->content_ptr;
+      /* How much we have of that what is needed. */
+      size_t move = min(this->buffer_ptr, need);
+	      
+      /* Copy what we have, and remove it from the the read buffer. */
+      memcpy(this->content + this->content_ptr, this->buffer, move * sizeof(char));
+      unbuffer_beginning(this, move, 1);
+	      
+      /* Keep track of how much we have read. */
+      this->content_ptr += move;
+    }
+  if (this->content_ptr == this->content_size)
+    {
+      /* If we have filled the content (or there was no content),
+	 mark the end of this stage, i.e. that the message is
+	 complete, and return with success. */
+      this->stage = 2;
+      return 1;
+    }
+  return 0;
+}
+
+
+/**
+ * Receive a part of the content, assuming the content is sent in chunks
+ * 
+ * @param   this  Memory slot in which to store the new message
+ * @return        Follows the rules of `libqwaitclient_http_message_read`
+ *                with one exception, if zero is returned the message
+ *                has not been completely read, if 1 is returned the
+ *                message has been completely read
+ */
+static int receive_chunked_transfer(_this_)
+{
+  char* old_content = this->content;
+  size_t length, chunk_size, i;
+  char* p;
+  
+  /* Wait for the line, that tells us how large the chunk is, has been received. */
+  p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char));
+  if (p == NULL)
+    return 0;
+  
+  /* Verify that the line is CRLF-terminated. */
+  length = (size_t)(p - this->buffer);
+  if ((length == 0) || (*(p - 1) != '\r'))
+    length--;
+  else
+    return -2;
+  
+  /* Parse the size of the chunk and validate it. */
+  chunk_size = 0;
+  for (i = 0; i < length; i++)
+    if (('0' <= this->buffer[i]) && (this->buffer[i] <= '9'))
+      chunk_size = chunk_size * 10 - (this->buffer[i] & 15);
+    else
+      return -2; /* Malformated value, enters unrecoverable state. */
+  chunk_size = -chunk_size;
+  
+  /* Wait for the chunk to be fully received. */
+  if (this->buffer_ptr < length + 2 + chunk_size + 2)
+    return 0;
+  
+  /* Verify that the chunk is CRLF-terminated. */
+  if (this->buffer[this->buffer_ptr - 2] != '\r')  return -2;
+  if (this->buffer[this->buffer_ptr - 1] != '\n')  return -2;
+  
+  /* Are we done yet? */
+  if (chunk_size == 0)
+    {
+      /* Remove the chunk from the buffer. */
+      unbuffer_beginning(this, length + 2 + chunk_size + 2, 1);
+      return 1;
+    }
+  
+  /* Copy the content from the buffer to the content storage. */
+  this->content_size = this->content_ptr + chunk_size;
+  if (xrealloc(this->content, this->content_size, char))
+    {
+      this->content = old_content;
+      return -1;
+    }
+  memcpy(this->content + this->content_ptr, this->buffer + length + 2, chunk_size * sizeof(char));
+  this->content_ptr = this->content_size;
+  
+  /* Remove the chunk from the buffer. */
+  unbuffer_beginning(this, length + 2 + chunk_size + 2, 1);
+  return 0;
+}
+
+
+/**
+ * Read the next message from a file descriptor of the socket
+ * 
+ * @param   this  Memory slot in which to store the new message
+ * @param   fd    The file descriptor of the socket
  * @return        Non-zero on error or interruption, errno will be
  *                set accordingly. Destroy the message on error,
  *                be aware that the reading could have been
@@ -348,7 +464,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
     }
   
   /* Read from file descriptor until we have a full message. */
-  for (;;) /* TODO \r\n; chucked transfer, identity */
+  for (;;)
     {
       char* p;
       size_t length;
@@ -357,56 +473,50 @@ int libqwaitclient_http_message_read(_this_, int fd)
       /* Read all headers that we have stored into the read buffer. */
       while ((this->stage == 0) &&
 	     ((p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char))) != NULL))
-	if ((length = (size_t)(p - this->buffer)))
-	  {
-	    /* We have found a header. */
-	    
-	    /* On every eighth header found with this function call,
-	       we prepare the header list for eight more headers so
-	       that it does not need to be reallocated again and again. */
-	    if (header_commit_buffer == 0)
-	      try (libqwaitclient_http_message_extend_headers(this, header_commit_buffer = 8));
-	    
-	    /* Create and store header. */
-	    try (store_header(this, length + 1));
-	    header_commit_buffer -= 1;
-	  }
-	else
-	  {
-	    /* We have found an empty line, i.e. the end of the headers. */
-	    
-	    /* Remove the header–content delimiter from the buffer,
-	       get the content's size and allocate the content. */
-	    try (initialise_content(this));
-	    
-	    /* Mark end of stage, next stage is getting the content. */
-	    this->stage = 1;
-	  }
+	{
+	  /* Verift that the line is CRLF-terminated. */
+	  length = (size_t)(p - this->buffer);
+	  if ((length == 0) || (*(p - 1) != '\r'))
+	    length--;
+	  else
+	    return -2;
+	  
+	  if (length > 0)
+	    {
+	      /* We have found a header. */
+	      
+	      /* On every eighth header found with this function call,
+		 we prepare the header list for eight more headers so
+		 that it does not need to be reallocated again and again. */
+	      if (header_commit_buffer == 0)
+		try (libqwaitclient_http_message_extend_headers(this, header_commit_buffer = 8));
+	      
+	      /* Create and store header. */
+	      try (store_header(this, length + 1));
+	      header_commit_buffer -= 1;
+	    }
+	  else
+	    {
+	      /* We have found an empty line, i.e. the end of the headers. */
+	      
+	      /* Remove the header–content delimiter from the buffer,
+		 get the content's size and allocate the content. */
+	      try (initialise_content(this));
+	      
+	      /* Mark end of stage, next stage is getting the content. */
+	      this->stage = 1;
+	    }
+	}
       
       
       /* Stage 1: content. */
-      if ((this->stage == 1) && (this->content_size > 0))
-	{
-	  /* How much of the content that has not yet been filled. */
-	  size_t need = this->content_size - this->content_ptr;
-	  /* How much we have of that what is needed. */
-	  size_t move = min(this->buffer_ptr, need);
-	  
-	  /* Copy what we have, and remove it from the the read buffer. */
-	  memcpy(this->content + this->content_ptr, this->buffer, move * sizeof(char));
-	  unbuffer_beginning(this, move, 1);
-	  
-	  /* Keep track of how much we have read. */
-	  this->content_ptr += move;
-	}
-      if ((this->stage == 1) && (this->content_ptr == this->content_size))
-	{
-	  /* If we have filled the content (or there was no content),
-	     mark the end of this stage, i.e. that the message is
-	     complete, and return with success. */
-	  this->stage = 2;
-	  return 0;
-	}
+      r = 0;
+      if ((this->stage == 1) && (this->transfer_encoding == KNOWN_LENGTH))
+	r = receive_known_length(this);
+      else if ((this->stage == 1) && (this->transfer_encoding == CHUNKED_TRANSFER))
+	r = receive_chunked_transfer(this);
+      if (r)
+	return r < 0 ? r : (r - 1);
       
       
       /* If stage 1 was not completed. */
