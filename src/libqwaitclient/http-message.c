@@ -38,6 +38,7 @@
  */
 int libqwaitclient_http_message_initialise(_this_)
 {
+  this->top = NULL;
   this->headers = NULL;
   this->header_count = 0;
   this->content = NULL;
@@ -65,6 +66,7 @@ int libqwaitclient_http_message_initialise(_this_)
  */
 void libqwaitclient_http_message_zero_initialise(_this_)
 {
+  this->top = NULL;
   this->headers = NULL;
   this->header_count = 0;
   this->content = NULL;
@@ -86,13 +88,13 @@ void libqwaitclient_http_message_zero_initialise(_this_)
  */
 void libqwaitclient_http_message_destroy(_this_)
 {
+  free(this->top), this->content = NULL;
   if (this->headers != NULL)
     {
       size_t i;
       xfree(this->headers, this->header_count);
       this->headers = NULL;
     }
-  
   free(this->content), this->content = NULL;
   free(this->buffer), this->buffer = NULL;
 }
@@ -139,6 +141,9 @@ static int libqwaitclient_http_message_extend_buffer(_this_)
  */
 static void reset_message(_this_)
 {
+  free(this->top);
+  this->top = NULL;
+  
   if (this->headers != NULL)
     {
       size_t i;
@@ -257,7 +262,7 @@ static int initialise_content(_this_)
  * Create a header from the buffer and store it
  * 
  * @param   this    The message
- * @param   length  The length of the header, including CRLF-termination
+ * @param   length  The length of the header, including NUL-termination
  * @return          The return value follows the rules of `libqwaitclient_http_message_read`
  */
 static int store_header(_this_, size_t length)
@@ -273,7 +278,7 @@ static int store_header(_this_, size_t length)
   header[length - 1] = '\0';
   
   /* Remove the header data from the read buffer. */
-  unbuffer_beginning(this, length, 1);
+  unbuffer_beginning(this, length + 1, 1);
   
   /* Make sure the the header syntax is correct so that
      the program does not need to care about it. */
@@ -285,6 +290,30 @@ static int store_header(_this_, size_t length)
   
   /* Store the header in the header list. */
   this->headers[this->header_count++] = header;
+  
+  return 0;
+}
+
+
+/**
+ * Create a header from the buffer and store it
+ * 
+ * @param   this    The message
+ * @param   length  The length of the header, including NUL-termination
+ * @return          The return value follows the rules of `libqwaitclient_http_message_read`
+ */
+static int store_top(_this_, size_t length)
+{
+  /* Allocate the top. */
+  if (xmalloc(this->top, length, char))
+    return -1;
+  /* Copy the header data into the allocated header, */
+  memcpy(this->top, this->buffer, length * sizeof(char));
+  /* and NUL-terminate it. */
+  this->top[length - 1] = '\0';
+  
+  /* Remove the top data from the read buffer. */
+  unbuffer_beginning(this, length + 1, 1);
   
   return 0;
 }
@@ -362,7 +391,7 @@ static int receive_known_length(_this_)
       /* If we have filled the content (or there was no content),
 	 mark the end of this stage, i.e. that the message is
 	 complete, and return with success. */
-      this->stage = 2;
+      this->stage = 3;
       return 1;
     }
   return 0;
@@ -418,6 +447,10 @@ static int receive_chunked_transfer(_this_)
     {
       /* Remove the chunk from the buffer. */
       unbuffer_beginning(this, length + 2 + chunk_size + 2, 1);
+      /* If we have filled the content (or there was no content),
+	 mark the end of this stage, i.e. that the message is
+	 complete, and return with success. */
+      this->stage = 3;
       return 1;
     }
   
@@ -455,9 +488,9 @@ int libqwaitclient_http_message_read(_this_, int fd)
   size_t header_commit_buffer = 0;
   int r;
   
-  /* If we are at stage 2, we are done and it is time to start over.
+  /* If we are at stage 3, we are done and it is time to start over.
      This is important because the function could have been interrupted. */
-  if (this->stage == 2)
+  if (this->stage == 3)
     {
       reset_message(this);
       this->stage = 0;
@@ -469,9 +502,29 @@ int libqwaitclient_http_message_read(_this_, int fd)
       char* p;
       size_t length;
       
-      /* Stage 0: headers. */
+      /* Stage 0: status/request line. */
+      if (this->stage == 0)
+	{
+	  /* Check that the line has been fully received. */
+	  p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char));
+	  if (p == NULL)
+	    continue;
+	  
+	  /* Verift that the line is CRLF-terminated. */
+	  length = (size_t)(p - this->buffer);
+	  if ((length == 0) || (*(p - 1) != '\r'))
+	    length--;
+	  else
+	    return -2;
+	  
+	  /* Create and store top line. */
+	  try (store_top(this, length + 1));
+	}
+      
+      
+      /* Stage 1: headers. */
       /* Read all headers that we have stored into the read buffer. */
-      while ((this->stage == 0) &&
+      while ((this->stage == 1) &&
 	     ((p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char))) != NULL))
 	{
 	  /* Verift that the line is CRLF-terminated. */
@@ -504,22 +557,22 @@ int libqwaitclient_http_message_read(_this_, int fd)
 	      try (initialise_content(this));
 	      
 	      /* Mark end of stage, next stage is getting the content. */
-	      this->stage = 1;
+	      this->stage = 2;
 	    }
 	}
       
       
-      /* Stage 1: content. */
+      /* Stage 2: content. */
       r = 0;
-      if ((this->stage == 1) && (this->transfer_encoding == KNOWN_LENGTH))
+      if ((this->stage == 2) && (this->transfer_encoding == KNOWN_LENGTH))
 	r = receive_known_length(this);
-      else if ((this->stage == 1) && (this->transfer_encoding == CHUNKED_TRANSFER))
+      else if ((this->stage == 2) && (this->transfer_encoding == CHUNKED_TRANSFER))
 	r = receive_chunked_transfer(this);
       if (r)
 	return r < 0 ? r : (r - 1);
       
       
-      /* If stage 1 was not completed. */
+      /* If stage 2 was not completed. */
       
       /* Continue reading from the socket into the buffer. */
       try (continue_read(this, fd));
@@ -536,7 +589,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
  */
 size_t libqwaitclient_http_message_compose_size(const _this_)
 {
-  size_t rc = 1 + this->content_size;
+  size_t rc = 2 + this->content_size;
   size_t i;
   for (i = 0; i < this->header_count; i++)
     rc += strlen(this->headers[i]) + 2;

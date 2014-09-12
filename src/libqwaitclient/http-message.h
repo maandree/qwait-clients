@@ -44,8 +44,13 @@ typedef enum libqwaitclient_http_message_transfer_encoding
 /**
  * Message passed between the server and the client
  */
-typedef struct libqwaitclient_http_message /* TODO top line */
+typedef struct libqwaitclient_http_message
 {
+  /**
+   * The line with the status line or request line
+   */
+  char* top;
+  
   /**
    * The headers in the message, each element in this list
    * as an unparsed header, it consists of both the header
@@ -97,7 +102,10 @@ typedef struct libqwaitclient_http_message /* TODO top line */
   libqwaitclient_http_message_transfer_encoding_t transfer_encoding;
   
   /**
-   * 0 while reading headers, 1 while reading content, and 2 when done (internal data)
+   * 0 while reading the status/request,
+   * 1 while reading headers,
+   * 2 while reading the content,
+   * and 3 when done (internal data)
    */
   int stage;
   
