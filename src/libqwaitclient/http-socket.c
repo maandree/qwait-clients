@@ -18,6 +18,8 @@
 #define _GNU_SOURCE
 #include "http-socket.h"
 
+#include "macros.h"
+
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -27,6 +29,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define  _this_  libqwaitclient_http_socket_t* restrict this
@@ -49,6 +52,10 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
   this->inet_family = AF_INET;
   this->socket_fd = 0;
   this->connected = 0;
+  this->send_buffer = NULL;
+  this->send_buffer_alloc = 0;
+  this->send_buffer_size = 0;
+  this->send_buffer_ptr = 0;
   
   this->socket_fd = socket(this->inet_family, SOCK_STREAM, IPPROTO_TCP);
   if (this->socket_fd < 0)
@@ -68,11 +75,13 @@ void libqwaitclient_http_socket_destroy(_this_)
   libqwaitclient_http_socket_disconnect(this);
   if (this->socket_fd > 0)
     close(this->socket_fd), this->socket_fd = 0;
+  free(this->send_buffer), this->send_buffer = NULL;
+  this->send_buffer_ptr = this->send_buffer_size = this->send_buffer_alloc = 0;
 }
 
 
 /**
- * Connect the HTTP socket to its server
+ * Connect an HTTP socket to its server
  * 
  * @param   this  The HTTP socket
  * @return        Zero on success, -1 on error with `errno` set accordingly
@@ -157,7 +166,7 @@ int libqwaitclient_http_socket_connect(_this_)
 
 
 /**
- * Disconnect the HTTP socket from its server
+ * Disconnect an HTTP socket from its server
  * 
  * @param  this  The HTTP socket
  */
@@ -168,6 +177,109 @@ void libqwaitclient_http_socket_disconnect(_this_)
   
   shutdown(this->socket_fd, SHUT_RDWR);
   this->connected = 0;
+}
+
+
+/**
+ * Send a message over an HTTP socket
+ * 
+ * @param   this     The HTTP socket
+ * @param   message  The message to send, `NULL` to continue with an already started message
+ * @return           Zero on success, -1 on error with `errno` set accordingly
+ */
+int libqwaitclient_http_socket_send(_this_, const libqwaitclient_http_message_t* restrict message)
+{
+#define length  (this->send_buffer_size - this->send_buffer_ptr)
+
+  size_t block_size;
+  
+  /* You may only send one message at a time, and you need to send a message. */
+  if ((message != NULL) && (length != 0))  return errno = EINPROGRESS, -1;
+  if ((message == NULL) && (length == 0))  return errno = ENODATA, -1;
+  
+  /* Starting on a new message? */
+  if (message != NULL)
+    {
+      /* Get the length of the message to send.  */
+      size_t size = libqwaitclient_http_message_compose_size(message);
+      
+      /* Save the length of the message, and temporarly mark the
+         message as finished in case something goes wrong. */
+      this->send_buffer_ptr = this->send_buffer_size = size;
+      
+      /* Reallocate the send buffer if it is too small. */
+      if (size > this->send_buffer_alloc)
+	{
+	  char* buffer = this->send_buffer;
+	  if (xrealloc(buffer, size, char))
+	    return -1;
+	  this->send_buffer = buffer;
+	  this->send_buffer_alloc = size;
+	}
+      
+      /* Start from the beginning. */
+      this->send_buffer_ptr = 0;
+      
+      /* Compose the message. */
+      libqwaitclient_http_message_compose(message, this->send_buffer);
+    }
+  
+  /* Send as much of the message as possible. */
+  block_size = length;
+  errno = 0;
+  while (length > 0)
+    {
+      /* Send. */
+      ssize_t just_sent = send(this->socket_fd,
+			       this->send_buffer + this->send_buffer_ptr,
+			       min(block_size, length),
+			       MSG_NOSIGNAL);
+      
+      /* How did it go? */
+      if (just_sent < 0)
+	{
+	  /* On error or interruption, cancel, unless the size of the
+	     message block was too large, in which case, first try to
+	     make the block smaller. */
+	  if ((errno != EMSGSIZE) || (block_size >>= 1, block_size == 0))
+	    return -1;
+	}
+      else
+	/* Wind the message. */
+	this->send_buffer_ptr += (size_t)just_sent;
+    }
+  
+  return 0;
+  
+#undef length
+}
+
+
+/**
+ * Receive message over an HTTP socket
+ * 
+ * The receive message will be stored to `this->message`
+ * 
+ * @param   this  The HTTP socket
+ * @return        Non-zero on error or interruption, errno will be
+ *                set accordingly. Destroy the message on error,
+ *                be aware that the reading could have been
+ *                interrupted by a signal rather than canonical error.
+ *                If -2 is returned errno will not have been set,
+ *                -2 indicates that the message is malformated,
+ *                which is a state that cannot be recovered from.
+ */
+int libqwaitclient_http_socket_receive(_this_)
+{
+  int r, saved_errno;
+  r = libqwaitclient_http_message_read(&(this->message), this->socket_fd);
+  if ((r == -1) && (errno == ECONNRESET))
+    {
+      saved_errno = errno;
+      libqwaitclient_http_socket_disconnect(this);
+      errno = saved_errno;
+    }
+  return r;
 }
 
 
