@@ -45,7 +45,7 @@ int main(int argc, char** argv)
   
   t (libqwaitclient_http_message_extend_headers(&msg, 1));
   t ((msg.headers[msg.header_count++] = strdup("Host: " QWAIT_SERVER_HOST)) == NULL);
-  t ((msg.top = strdup("GET /api/queues HTTP/1.1")) == NULL);
+  t ((msg.top = strdup("GET /api/queue/adk HTTP/1.1")) == NULL);
   
   t (libqwaitclient_http_socket_connect(&sock));
   t (libqwaitclient_http_socket_send(&sock, &msg));

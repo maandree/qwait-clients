@@ -32,7 +32,6 @@
 
 
 #if defined(DEBUG) && defined(__GNUC__)
-# include <stdio.h>
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wformat-extra-args"
 # define D(format, ...)  fprintf(stderr, "%s:%i: " format "\n", __FILE__, __LINE__, __VA_ARGS__ +0)
