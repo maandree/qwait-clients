@@ -108,6 +108,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
   
   
   /* Find the length of the string. */
+  code++;
   for (i = 0, escape = 0; i < length; i++)
     {
       char c = code[i];
@@ -118,7 +119,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
   if (i == length)
     return errno = EINVAL, 0;
   length = i;
-  read_length = i + 1;
+  read_length = i + 2;
   
   
   /* Second, we will encode to UTF-32 to surrogate support easier,
@@ -284,7 +285,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
      but we know that that our result cannot be longer then the
      original encoding. */
   if (xmalloc(this->data.string, read_length, char))
-    return saved_errno = errno, free(utf32), errno = saved_errno, -1;
+    return saved_errno = errno, free(utf32), errno = saved_errno, 0;
   
   /* Re-encode. */
 #define utf8  (this->data.string)
@@ -307,8 +308,8 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       
       /* Less trivial case. */
       do
-	utf8[--j] = c & 0x3F, c >>= 6, prefix |= prefix >> 1;
-      while (c || (utf8[j] & prefix));
+	utf8[--j] = (c & 0x3F) | 0x80, c >>= 6, prefix |= prefix >> 1;
+      while (c || (utf8[j] & (prefix ^ 0x80)));
       utf8[j] |= (prefix << 1) & 255;
     }
   
@@ -321,7 +322,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
   
   /* Shrink the string's allocation so it is not unnecessarily large. */
   new = this->data.string;
-  if (xrealloc(new, this->length, char))
+  if (xrealloc(new, this->length, char) && (this->length))
     return 0;
   this->data.string = new;
   
@@ -355,6 +356,16 @@ static size_t libqwaitclient_json_subparse_array(_this_, const char* restrict co
   size_t parsed = 1;
   size_t subparsed;
   
+  SKIP_JSON_WHITESPACE;
+  
+  /* It is an error if the code ends without a ']'. */
+  if (parsed == length)
+    return errno = EINVAL, 0;
+  
+  /* Check for empty array. (Edge case) */
+  if (code[parsed] == ']')
+    return parsed + 1;
+  
   if (xmalloc(this->data.array, allocated, libqwaitclient_json_t))
     return 0;
   
@@ -373,20 +384,20 @@ static size_t libqwaitclient_json_subparse_array(_this_, const char* restrict co
       
       /* Parse next element. */
       subparsed = libqwaitclient_json_subparse(this->data.array + this->length, code + parsed, length - parsed);
+      this->length++;
       if (subparsed == 0)
 	return errno = EINVAL, 0;
-      this->length++;
       parsed += subparsed;
       
       SKIP_JSON_WHITESPACE;
       
-      /* It is an error if the code ends without a ']' */
+      /* It is an error if the code ends without a ']'. */
       if (parsed == length)
 	return errno = EINVAL, 0;
       
     } while (code[parsed++] == ',');
   
-  /* It is an error if the code ends without a ']' */
+  /* It is an error if the code ends without a ']'. */
   if (code[parsed - 1] != ']') /* The `while();` increased `parsed`. */
     return errno = EINVAL, 0;
   
@@ -394,7 +405,7 @@ static size_t libqwaitclient_json_subparse_array(_this_, const char* restrict co
   if (allocated > this->length)
     {
       libqwaitclient_json_t* new = this->data.array;
-      if (xrealloc(new, this->length, libqwaitclient_json_t))
+      if (xrealloc(new, this->length, libqwaitclient_json_t) && (this->length))
 	return 0;
       this->data.array = new;
     }
@@ -417,6 +428,16 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
   size_t parsed = 1;
   size_t subparsed;
   
+  SKIP_JSON_WHITESPACE;
+  
+  /* It is an error if the code ends without a '}'. */
+  if (parsed == length)
+    return errno = EINVAL, 0;
+  
+  /* Check for empty object. (Edge case) */
+  if (code[parsed] == '}')
+    return parsed + 1;
+  
   if (xmalloc(this->data.object, allocated, libqwaitclient_json_t))
     return 0;
   
@@ -433,6 +454,8 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
 	  this->data.object = new;
 	}
       
+      SKIP_JSON_WHITESPACE;
+      
       /* Parse next member's name. */
       NEXT.name = NULL;
       subparsed = libqwaitclient_json_subparse(&(NEXT.value), code + parsed, length - parsed);
@@ -443,34 +466,33 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
       NEXT.name = NEXT.value.data.string;
       NEXT.name_length = NEXT.value.length;
       memset(&(NEXT.value), 0, sizeof(libqwaitclient_json_t));
-      this->length++;
       parsed += subparsed;
       
       SKIP_JSON_WHITESPACE;
       
       /* ':' delimits a member's name and its value. */
       if ((parsed == length) || (code[parsed++] != ':'))
-	return errno = EINVAL, 0;
+	return free(NEXT.name), errno = EINVAL, 0;
       
       SKIP_JSON_WHITESPACE;
       
       /* Parse next member's value. */
       subparsed = libqwaitclient_json_subparse(&(NEXT.value), code + parsed, length - parsed);
+      this->length++;
       if (subparsed == 0)
 	return errno = EINVAL, 0;
-      this->length++;
       parsed += subparsed;
       
       SKIP_JSON_WHITESPACE;
       
-      /* It is an error if the code ends without a '}' */
+      /* It is an error if the code ends without a '}'. */
       if (parsed == length)
 	return errno = EINVAL, 0;
       
       #undef NEXT
     } while (code[parsed++] == ',');
   
-  /* It is an error if the code ends without a '}' */
+  /* It is an error if the code ends without a '}'. */
   if (code[parsed - 1] != '}') /* The `while();` increased `parsed`. */
     return errno = EINVAL, 0;
   
@@ -478,7 +500,7 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
   if (allocated > this->length)
     {
       libqwaitclient_json_association_t* new = this->data.object;
-      if (xrealloc(new, this->length, libqwaitclient_json_t))
+      if (xrealloc(new, this->length, libqwaitclient_json_association_t) && (this->length))
 	return 0;
       this->data.object = new;
     }
@@ -533,8 +555,8 @@ static int libqwaitclient_json_subparse_integer(_this_, const char* restrict cod
   /* Copy the code into a NUL-terminated buffer so we
      can compare against the `int64_t` and parse its
      value with `strtoll`. */
-  memcpy(buf, code, length);
-  buf[19] = '\0';
+  memcpy(buf, code, length * sizeof(char));
+  buf[length] = '\0';
   
   /* Is the integer larger than `int64_t`? We are restricted to `INT64_MAX`. */
   if (!twoscomp || pos)
@@ -671,17 +693,17 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
   if (*code == '"')
     {
       this->type = LIBQWAITCLIENTS_JSON_TYPE_STRING;
-      return libqwaitclient_json_subparse_string(this, code + 1, length - 1);
+      return libqwaitclient_json_subparse_string(this, code, length);
     }
   else if (*code == '[')
     {
       this->type = LIBQWAITCLIENTS_JSON_TYPE_ARRAY;
-      return libqwaitclient_json_subparse_array(this, code + 1, length - 1);
+      return libqwaitclient_json_subparse_array(this, code, length);
     }
   else if (*code == '{')
     {
       this->type = LIBQWAITCLIENTS_JSON_TYPE_OBJECT;
-      return libqwaitclient_json_subparse_object(this, code + 1, length - 1);
+      return libqwaitclient_json_subparse_object(this, code, length);
     }
   
   /* Null, true, and false are keyword that are easily distinguishable
@@ -729,9 +751,175 @@ int libqwaitclient_json_parse(_this_, const char* restrict code, size_t length)
   
   /* Require that everything was part of the JSON code. */
   if (parsed < length)
-    return errno = EINVAL, -1;
+    return libqwaitclient_json_destroy(this), errno = EINVAL, -1;
   
   return 0;
+}
+
+
+/**
+ * Print a string as part of a JSON structure in debug format, exclude surrounding quotes
+ * 
+ * @param  f       The output sink
+ * @param  string  The string to print
+ * @parma  n       The `char`-length of `string`
+ */
+static void libqwaitclient_json_subdump_string(FILE* f, const char* string, size_t n)
+{
+  size_t i, j, size = min(n, 16);
+  char* buf;
+  
+  if (xmalloc(buf, size, char))
+    perror("libqwaitclient_json_subdump_string"), abort();
+  
+  for (i = j = 0; i < n; i++)
+    {
+      char c = string[i];
+      
+      if (j + 10 > size)
+	if (xrealloc(buf, size <<= 1, char))
+	  perror("libqwaitclient_json_subdump_string"), abort();
+      
+      if (strchr("\\\"", c))
+	buf[j++] = '\\', buf[j++] = c;
+      else if ((0 <= c) && (c < ' '))
+	{
+	  buf[j++] = '\\';
+	  switch (c)
+	    {
+	    case '\033':  buf[j++] = 'e';  break;
+	    case '\r':    buf[j++] = 'r';  break;
+	    case '\t':    buf[j++] = 't';  break;
+	    case '\a':    buf[j++] = 'a';  break;
+	    case '\f':    buf[j++] = 'f';  break;
+	    case '\v':    buf[j++] = 'v';  break;
+	    case '\b':    buf[j++] = 'b';  break;
+	    case '\n':    buf[j++] = 'n';  break;
+	    default:
+	      sprintf(buf + j, "%o", (int)c);
+	      j += strlen(buf + j);
+	      break;
+	    }
+	}
+      else
+	buf[j++] = c;
+    }
+  
+  buf[j] = '\0';
+  fprintf(f, "%s", buf);
+  free(buf);
+}
+
+
+/**
+ * Print a part of a JSON structure in debug format
+ * 
+ * @param  this    The JSON structure
+ * @param  f       The output sink
+ * @parma  indent  The size of the indent
+ */
+static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
+{
+#define PRIindent  "*.s"
+  size_t i, n = this->length;
+  
+  switch (this->type)
+    {
+    case LIBQWAITCLIENTS_JSON_TYPE_INTEGER:
+      fprintf(f, "%" PRIi64, this->data.integer);
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER:
+      fprintf(f, "%s(L)", this->data.large_integer);
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_FLOATING:
+      fprintf(f, "%lf(F)", this->data.floating);
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_STRING:
+      fprintf(f, "\"");
+      libqwaitclient_json_subdump_string(f, this->data.string, n);
+      fprintf(f, "\"(%zu)", this->length);
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN:
+      fprintf(f, this->data.boolean ? "true" : "false");
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_ARRAY:
+      if (n == 0)
+	{
+	  fprintf(f, "[]");
+	  break;
+	}
+      if (n == 1)
+	{
+	  fprintf(f, "[");
+	  libqwaitclient_json_subdump(this->data.array, f, indent);
+	  fprintf(f, "]");
+	  break;
+	}
+      fprintf(f, "[\n%" PRIindent, indent + 2, "");
+      for (i = 0; i < n; i++)
+	{
+	  fprintf(f, "%s%" PRIindent "", i ? ",\n" : "", i ? indent + 2 : 0, "");
+	  libqwaitclient_json_subdump(this->data.array + i, f, indent + 2);
+	}
+      fprintf(f, "\n%" PRIindent "]", indent, "");
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_OBJECT:
+      if (n == 0)
+	{
+	  fprintf(f, "{ }");
+	  break;
+	}
+      if (n == 1)
+	{
+	  fprintf(f, "{ \"");
+	  libqwaitclient_json_subdump_string(f, this->data.object->name, this->data.object->name_length);
+	  fprintf(f, "\"(%zu) = ", this->data.object->name_length);
+	  libqwaitclient_json_subdump(&(this->data.object->value), f, indent);
+	  fprintf(f, " }");
+	  break;
+	}
+      fprintf(f, "{\n%" PRIindent, indent + 2, "");
+      for (i = 0; i < n; i++)
+	{
+	  fprintf(f, "%s%" PRIindent "\"", i ? ",\n" : "", i ? indent + 2 : 0, "");
+	  libqwaitclient_json_subdump_string(f, this->data.object[i].name, this->data.object[i].name_length);
+	  fprintf(f, "\"(%zu) = ", this->data.object[i].name_length);
+	  libqwaitclient_json_subdump(&(this->data.object[i].value), f, indent + 2);
+	}
+      fprintf(f, "\n%" PRIindent "}", indent, "");
+      break;
+      
+    case LIBQWAITCLIENTS_JSON_TYPE_NULL:
+      fprintf(f, "null");
+      break;
+      
+    default:
+      abort();
+      break;
+    }
+  
+#undef PRIindent
+}
+
+
+/**
+ * Print a JSON structure in debug format, this
+ * is not a serialisation for sending data to
+ * other machines, it is simply a debugging tool
+ * 
+ * @param  this    The JSON structure
+ * @param  output  The output sink
+ */
+void libqwaitclient_json_dump(_this_, FILE* output)
+{
+  libqwaitclient_json_subdump(this, output, 0);
+  fprintf(output, "\n");
 }
 
 

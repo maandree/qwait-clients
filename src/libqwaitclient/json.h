@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 
 /**
@@ -121,7 +122,7 @@ typedef struct libqwaitclient_json
     /**
      * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_STRING`
      * 
-     * UTF-8 string that may contain NULL, and it may contain
+     * UTF-8 string that may contain NUL, and it may contain
      * characters up to and surrogate pair are resolved
      * 
      * UTF-8 encoding length attacks are mitigated
@@ -164,7 +165,7 @@ typedef struct libqwaitclient_json_association
   /**
    * The key (the name)
    * 
-   * UTF-8 string that may contain NULL, and it may contain
+   * UTF-8 string that may contain NUL, and it may contain
    * characters up to and surrogate pair are resolved
    * 
    * UTF-8 encoding length attacks are mitigated
@@ -206,6 +207,16 @@ void libqwaitclient_json_destroy(_this_);
  * @return          Zero on success, -1 on error
  */
 int libqwaitclient_json_parse(_this_, const char* restrict code, size_t length);
+
+/**
+ * Print a JSON structure in debug format, this
+ * is not a serialisation for sending data to
+ * other machines, it is simply a debugging tool
+ * 
+ * @param  this    The JSON structure
+ * @param  output  The output sink
+ */
+void libqwaitclient_json_dump(_this_, FILE* output);
 
 
 #undef _this_
