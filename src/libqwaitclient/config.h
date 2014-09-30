@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENTS_CONFIG_H
-#define LIBQWAITCLIENTS_CONFIG_H
+#ifndef LIBQWAITCLIENT_CONFIG_H
+#define LIBQWAITCLIENT_CONFIG_H
 
 
 /**

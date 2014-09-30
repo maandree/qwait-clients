@@ -69,11 +69,11 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
   size_t i, n = data->length;
   int saved_errno;
   
-  if (data->type != LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
+  if (data->type != LIBQWAITCLIENT_JSON_TYPE_OBJECT)
     return errno = EINVAL, -1;
   
 #define test(want)      ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
-#define str(var, have)  ((have->type == LIBQWAITCLIENTS_JSON_TYPE_NULL) ?	\
+#define str(var, have)  ((have->type == LIBQWAITCLIENT_JSON_TYPE_NULL) ?	\
 			  (var = NULL, 0) :					\
 			  (var = libqwaitclient_json_to_zstr(have), var == NULL))
   
@@ -105,7 +105,7 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
   if (str(this->comment,   data_comment))     goto fail;
   if (str(this->user_id,   data_user_id))     goto fail;
   if (str(this->real_name, data_real_name))   goto fail;
-  if (data_enter_time->type != LIBQWAITCLIENTS_JSON_TYPE_INTEGER)
+  if (data_enter_time->type != LIBQWAITCLIENT_JSON_TYPE_INTEGER)
     goto einval;
   this->enter_time_seconds = (time_t)(data_enter_time->data.integer / 1000);
   this->enter_time_mseconds   = (int)(data_enter_time->data.integer % 1000);

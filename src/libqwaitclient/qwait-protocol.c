@@ -59,7 +59,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   t (libqwaitclient_http_socket_receive(sock));
   t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
   
-  if (json.type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
+  if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
     {
       errno = EBADMSG;
       goto fail;

@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENTS_JSON_H
-#define LIBQWAITCLIENTS_JSON_H
+#ifndef LIBQWAITCLIENT_JSON_H
+#define LIBQWAITCLIENT_JSON_H
 
 
 #include <stddef.h>
@@ -27,42 +27,42 @@
 /**
  * The data is an integer that fits `int64_t`
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_INTEGER  0
+#define LIBQWAITCLIENT_JSON_TYPE_INTEGER  0
 
 /**
  * The data is an integer larger that what would fit `int64_t`
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER  1
+#define LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER  1
 
 /**
  * The data is a double-precision floating-point
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_FLOATING  2
+#define LIBQWAITCLIENT_JSON_TYPE_FLOATING  2
 
 /**
  * The data is a string
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_STRING  3
+#define LIBQWAITCLIENT_JSON_TYPE_STRING  3
 
 /**
  * The data is a boolean
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN  4
+#define LIBQWAITCLIENT_JSON_TYPE_BOOLEAN  4
 
 /**
  * The data is an array
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_ARRAY  5
+#define LIBQWAITCLIENT_JSON_TYPE_ARRAY  5
 
 /**
  * The data is an object
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_OBJECT  6
+#define LIBQWAITCLIENT_JSON_TYPE_OBJECT  6
 
 /**
  * The data is null
  */
-#define LIBQWAITCLIENTS_JSON_TYPE_NULL  7
+#define LIBQWAITCLIENT_JSON_TYPE_NULL  7
 
 
 
@@ -99,12 +99,12 @@ typedef struct libqwaitclient_json
   union
   {
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_INTEGER`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_INTEGER`
      */
     int64_t integer;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER`
      * 
      * The integer is stored as a NUL-terminated string without
      * a '+' prefix
@@ -115,12 +115,12 @@ typedef struct libqwaitclient_json
     char* large_integer;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_FLOATING`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_FLOATING`
      */
     double floating;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_STRING`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_STRING`
      * 
      * UTF-8 string that may contain NUL, and it may contain
      * characters up to and surrogate pair are resolved
@@ -132,21 +132,21 @@ typedef struct libqwaitclient_json
     char* string;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_BOOLEAN`
      * 
      * 0 for false, 1 for true
      */
     int boolean;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_ARRAY`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_ARRAY`
      * 
      * The number of elements are determined by `length`
      */
     struct libqwaitclient_json* array;
     
     /**
-     * Used if `type` is `LIBQWAITCLIENTS_JSON_TYPE_OBJECT`
+     * Used if `type` is `LIBQWAITCLIENT_JSON_TYPE_OBJECT`
      * 
      * The number of pairs are determined by `length`
      */

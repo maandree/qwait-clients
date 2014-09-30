@@ -63,17 +63,17 @@ void libqwaitclient_json_destroy(_this_)
 {
   size_t i, n = this->length;
   
-  if (this->type == LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER)
+  if (this->type == LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER)
     free(this->data.large_integer), this->data.large_integer = NULL;
-  else if (this->type == LIBQWAITCLIENTS_JSON_TYPE_STRING)
+  else if (this->type == LIBQWAITCLIENT_JSON_TYPE_STRING)
     free(this->data.string), this->data.string = NULL;
-  else if (this->type == LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
+  else if (this->type == LIBQWAITCLIENT_JSON_TYPE_ARRAY)
     {
       for (i = 0; i < n; i++)
 	libqwaitclient_json_destroy(this->data.array + i);
       free(this->data.array), this->data.array = NULL;
     }
-  else if (this->type == LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
+  else if (this->type == LIBQWAITCLIENT_JSON_TYPE_OBJECT)
     {
       for (i = 0; i < n; i++)
 	{
@@ -93,7 +93,7 @@ void libqwaitclient_json_destroy(_this_)
  */
 int libqwaitclient_json_to_bool(const _this_)
 {
-  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN)
+  if (this->type != LIBQWAITCLIENT_JSON_TYPE_BOOLEAN)
     return D("expected boolean type",), errno = EINVAL, -1;
   
   return this->data.boolean ? 1 : 0;
@@ -110,7 +110,7 @@ char* libqwaitclient_json_to_zstr(const _this_)
 {
   char* rc;
   
-  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_STRING)
+  if (this->type != LIBQWAITCLIENT_JSON_TYPE_STRING)
     return D("expected string type",), errno = EINVAL, NULL;
   
   if (xmalloc(rc, this->length + 1, char))
@@ -135,7 +135,7 @@ char* restrict* libqwaitclient_json_to_zstrs(const _this_)
   size_t i, n = this->length;
   int saved_errno;
   
-  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
+  if (this->type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
     return D("expected string type",), errno = EINVAL, NULL;
   
   if (xmalloc(rc, n, char*))
@@ -541,7 +541,7 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
       subparsed = libqwaitclient_json_subparse(&(NEXT.value), code + parsed, length - parsed);
       if (subparsed == 0)
 	return 0;
-      if (NEXT.value.type != LIBQWAITCLIENTS_JSON_TYPE_STRING)
+      if (NEXT.value.type != LIBQWAITCLIENT_JSON_TYPE_STRING)
 	return D("object key was not a string",), this->length++, errno = EINVAL, 0;
       NEXT.name = NEXT.value.data.string;
       NEXT.name_length = NEXT.value.length;
@@ -667,7 +667,7 @@ static int libqwaitclient_json_subparse_integer(_this_, const char* restrict cod
   
   /* Large integer! */
  large_integer:
-  this->type = LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER;
+  this->type = LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER;
   if (xmalloc(this->data.large_integer, neg + length + 1, char))
     return -1;
   memcpy(this->data.large_integer + neg, code, length * sizeof(char));
@@ -737,7 +737,7 @@ static size_t libqwaitclient_json_subparse_number(_this_, const char* restrict c
       break;
   
   /* Set preliminary type. (Is final if floating.) */
-  this->type = is_float ? LIBQWAITCLIENTS_JSON_TYPE_FLOATING : LIBQWAITCLIENTS_JSON_TYPE_INTEGER;
+  this->type = is_float ? LIBQWAITCLIENT_JSON_TYPE_FLOATING : LIBQWAITCLIENT_JSON_TYPE_INTEGER;
   
   /* Parse the value. */
   if (is_float)
@@ -772,17 +772,17 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
   /* String, array and object are easy to identify, delegate it, they are complex. */
   if (*code == '"')
     {
-      this->type = LIBQWAITCLIENTS_JSON_TYPE_STRING;
+      this->type = LIBQWAITCLIENT_JSON_TYPE_STRING;
       return libqwaitclient_json_subparse_string(this, code, length);
     }
   else if (*code == '[')
     {
-      this->type = LIBQWAITCLIENTS_JSON_TYPE_ARRAY;
+      this->type = LIBQWAITCLIENT_JSON_TYPE_ARRAY;
       return libqwaitclient_json_subparse_array(this, code, length);
     }
   else if (*code == '{')
     {
-      this->type = LIBQWAITCLIENTS_JSON_TYPE_OBJECT;
+      this->type = LIBQWAITCLIENT_JSON_TYPE_OBJECT;
       return libqwaitclient_json_subparse_object(this, code, length);
       /* We will assume that key duplication does not occur,
 	 instead of testing for it. */
@@ -792,11 +792,11 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
    * and there no other alternatives. We parse the them exactly, a caller
    * will fail of there was something more behind them. */
   if ((length >= 4) && !memcmp(code, "null", 4 * sizeof(char)))
-    return this->type = LIBQWAITCLIENTS_JSON_TYPE_NULL, 4;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_NULL, 4;
   else if ((length >= 4) && !memcmp(code, "true", 4 * sizeof(char)))
-    return this->type = LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN, this->data.boolean = 1, 4;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 1, 4;
   else if ((length >= 5) && !memcmp(code, "false", 5 * sizeof(char)))
-    return this->type = LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN, this->data.boolean = 0, 5;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 0, 5;
   
   /* Numbers are a bit more complex, delegate it. */
   return libqwaitclient_json_subparse_number(this, code, length);
@@ -907,29 +907,29 @@ static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
   
   switch (this->type)
     {
-    case LIBQWAITCLIENTS_JSON_TYPE_INTEGER:
+    case LIBQWAITCLIENT_JSON_TYPE_INTEGER:
       fprintf(f, "%" PRIi64, this->data.integer);
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_LARGE_INTEGER:
+    case LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER:
       fprintf(f, "%s(L)", this->data.large_integer);
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_FLOATING:
+    case LIBQWAITCLIENT_JSON_TYPE_FLOATING:
       fprintf(f, "%lf(F)", this->data.floating);
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_STRING:
+    case LIBQWAITCLIENT_JSON_TYPE_STRING:
       fprintf(f, "\"");
       libqwaitclient_json_subdump_string(f, this->data.string, n);
       fprintf(f, "\"(%zu)", this->length);
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN:
+    case LIBQWAITCLIENT_JSON_TYPE_BOOLEAN:
       fprintf(f, this->data.boolean ? "true" : "false");
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_ARRAY:
+    case LIBQWAITCLIENT_JSON_TYPE_ARRAY:
       if (n == 0)
 	{
 	  fprintf(f, "[]");
@@ -951,7 +951,7 @@ static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
       fprintf(f, "\n%" PRIindent "]", indent, "");
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_OBJECT:
+    case LIBQWAITCLIENT_JSON_TYPE_OBJECT:
       if (n == 0)
 	{
 	  fprintf(f, "{ }");
@@ -977,7 +977,7 @@ static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
       fprintf(f, "\n%" PRIindent "}", indent, "");
       break;
       
-    case LIBQWAITCLIENTS_JSON_TYPE_NULL:
+    case LIBQWAITCLIENT_JSON_TYPE_NULL:
       fprintf(f, "null");
       break;
       

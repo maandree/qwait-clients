@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENTS_QWAIT_POSITION_H
-#define LIBQWAITCLIENTS_QWAIT_POSITION_H
+#ifndef LIBQWAITCLIENT_QWAIT_POSITION_H
+#define LIBQWAITCLIENT_QWAIT_POSITION_H
 
 
 #include "json.h"

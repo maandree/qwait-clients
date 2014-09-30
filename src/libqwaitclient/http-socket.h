@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENTS_HTTP_SOCKET_H
-#define LIBQWAITCLIENTS_HTTP_SOCKET_H
+#ifndef LIBQWAITCLIENT_HTTP_SOCKET_H
+#define LIBQWAITCLIENT_HTTP_SOCKET_H
 
 
 #include "http-message.h"

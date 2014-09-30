@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENTS_MACROS_H
-#define LIBQWAITCLIENTS_MACROS_H
+#ifndef LIBQWAITCLIENT_MACROS_H
+#define LIBQWAITCLIENT_MACROS_H
 
 
 
