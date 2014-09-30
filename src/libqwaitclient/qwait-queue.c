@@ -127,13 +127,10 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
   if (data_positions->type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
     goto einval;
   n = data_positions->length;
-  if (xmalloc(this->positions, n, libqwaitclient_qwait_position_t))  goto fail;
+  if (xcalloc(this->positions, n, libqwaitclient_qwait_position_t))  goto fail;
   for (i = 0; i < n; i++, this->position_count++)
-    {
-      libqwaitclient_qwait_position_initialise(this->positions + i);
-      if (libqwaitclient_qwait_position_parse(this->positions + i, data_positions->data.array + i) < 0)
-	goto fail;
-    }
+    if (libqwaitclient_qwait_position_parse(this->positions + i, data_positions->data.array + i) < 0)
+      goto fail;
   
   return 0;
   
@@ -172,14 +169,18 @@ int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b)
 void libqwaitclient_qwait_queue_dump(_this_, FILE* output)
 {
   size_t i, n;
-  fprintf(output, "queue \"%s\" (%s)\n", this->title, this->name);
-  fprintf(output, "  owners");
+  
+  fprintf(output, "queue \"%s\" (%s)", this->title, this->name);
+  
+  fprintf(output, this->owner_count ? "\n  owners" : "\n  no owners");
   for (i = 0, n = this->owner_count; i < n; i++)
     fprintf(output, "%s%s", i ? ", " : ": ", this->owners[i]);
-  fprintf(output, "\n  moderators");
+  
+  fprintf(output, this->moderator_count ? "\n  moderators" : "\n  no moderators");
   for (i = 0, n = this->moderator_count; i < n; i++)
     fprintf(output, "%s%s", i ? ", " : ": ", this->moderators[i]);
-  fprintf(output, "\n  entries:\n");
+  
+  fprintf(output, this->position_count ? "\n  entries\n" : "\n  no entries\n");
   for (i = 0, n = this->position_count; i < n; i++)
     {
       fprintf(output, "    ");

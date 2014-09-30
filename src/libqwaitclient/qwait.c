@@ -21,13 +21,11 @@
 #include "macros.h"
 #include "config.h"
 #include "http-socket.h"
-#include "http-message.h"
-#include "json.h"
-#include "qwait-position.h"
-#include "qwait-queue.h"
+#include "qwait-protocol.h"
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define  t(expression)   if (expression)  goto fail
@@ -36,48 +34,33 @@
 int main(int argc, char** argv)
 {
   libqwaitclient_http_socket_t sock;
-  libqwaitclient_http_message_t msg;
-  libqwaitclient_json_t json;
-  libqwaitclient_qwait_queue_t queue;
+  libqwaitclient_qwait_queue_t* queues = NULL;
+  size_t i, n;
+  int rc = 0;
   
   (void) argc;
   
-  memset(&json, 0, sizeof(libqwaitclient_json_t));
-  libqwaitclient_qwait_queue_initialise(&queue);
-  libqwaitclient_http_message_zero_initialise(&msg);
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
-  
-  t (libqwaitclient_http_message_extend_headers(&msg, 1));
-  t ((msg.headers[msg.header_count++] = strdup("Host: " QWAIT_SERVER_HOST)) == NULL);
-  t ((msg.top = strdup("GET /api/queue/adk HTTP/1.1")) == NULL);
-  
   t (libqwaitclient_http_socket_connect(&sock));
-  t (libqwaitclient_http_socket_send(&sock, &msg));
-  t (libqwaitclient_http_socket_receive(&sock));
-  printf("%.*s\n\n", (int)(sock.message.content_size), sock.message.content);
   
-  t (libqwaitclient_json_parse(&json, sock.message.content, sock.message.content_size));
-  libqwaitclient_json_dump(&json, stdout);
-  printf("\n");
+  t ((queues = libqwaitclient_qwait_get_queues(&sock, &n)) == NULL);
+  for (i = 0; i < n; i++)
+    {
+      printf(i ? "\n" : "");
+      libqwaitclient_qwait_queue_dump(queues + i, stdout);
+    }
   
-  libqwaitclient_qwait_queue_parse(&queue, &json);
-  libqwaitclient_qwait_queue_dump(&queue, stdout);
-  printf("\n");
-  
+ done:
   libqwaitclient_http_socket_disconnect(&sock);
   libqwaitclient_http_socket_destroy(&sock);
-  libqwaitclient_http_message_destroy(&msg);
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_qwait_queue_destroy(&queue);
-  return 0;
+  for (i = 0; i < n; i++)
+      libqwaitclient_qwait_queue_destroy(queues + i);
+  free(queues);
+  return rc;
   
  fail:
   perror(*argv);
-  libqwaitclient_http_socket_disconnect(&sock);
-  libqwaitclient_http_socket_destroy(&sock);
-  libqwaitclient_http_message_destroy(&msg);
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_qwait_queue_destroy(&queue);
-  return 1;
+  rc = 1;
+  goto done;
 }
 

@@ -72,7 +72,10 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
   if (data->type != LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
     return errno = EINVAL, -1;
   
-#define test(want)  ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
+#define test(want)      ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
+#define str(var, have)  ((have->type == LIBQWAITCLIENTS_JSON_TYPE_NULL) ?	\
+			  (var = NULL, 0) :					\
+			  (var = libqwaitclient_json_to_zstr(have), var == NULL))
   
   /* Read information. */
   for (i = 0; i < n; i++)
@@ -98,15 +101,16 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
   if (data_enter_time == NULL)  goto einval;
   
   /* Evaluate data. */
-  if ((this->location  = libqwaitclient_json_to_zstr(data_location))  == NULL)  goto fail;
-  if ((this->comment   = libqwaitclient_json_to_zstr(data_comment))   == NULL)  goto fail;
-  if ((this->user_id   = libqwaitclient_json_to_zstr(data_user_id))   == NULL)  goto fail;
-  if ((this->real_name = libqwaitclient_json_to_zstr(data_real_name)) == NULL)  goto fail;
+  if (str(this->location,  data_location))    goto fail;
+  if (str(this->comment,   data_comment))     goto fail;
+  if (str(this->user_id,   data_user_id))     goto fail;
+  if (str(this->real_name, data_real_name))   goto fail;
   if (data_enter_time->type != LIBQWAITCLIENTS_JSON_TYPE_INTEGER)
     goto einval;
   this->enter_time_seconds = (time_t)(data_enter_time->data.integer / 1000);
   this->enter_time_mseconds   = (int)(data_enter_time->data.integer % 1000);
   
+#undef str
 #undef test
   
   return 0;
