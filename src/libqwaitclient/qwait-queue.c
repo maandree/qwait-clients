@@ -112,11 +112,11 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
   if (data_positions  == NULL)  goto einval;
   
   /* Evaluate data. */
-  if ((this->name       = libqwaitclient_json_to_zstr(data_name))   == NULL)  goto fail;
-  if ((this->title      = libqwaitclient_json_to_zstr(data_title))  == NULL)  goto fail;
-  if ((this->hidden     = libqwaitclient_json_to_bool(data_hidden)) < 0)      goto fail;
-  if ((this->locked     = libqwaitclient_json_to_bool(data_locked)) < 0)      goto fail;
-  if ((this->owners     = libqwaitclient_json_to_zstrs(data_owners))     == NULL)
+  if ((this->name       = libqwaitclient_json_to_zstr(data_name))    == NULL)  goto fail;
+  if ((this->title      = libqwaitclient_json_to_zstr(data_title))   == NULL)  goto fail;
+  if ((this->hidden     = libqwaitclient_json_to_bool(data_hidden))  < 0)      goto fail;
+  if ((this->locked     = libqwaitclient_json_to_bool(data_locked))  < 0)      goto fail;
+  if ((this->owners     = libqwaitclient_json_to_zstrs(data_owners)) == NULL)
     if (errno)
       goto fail;
   this->owner_count = data_owners->length;
@@ -127,7 +127,7 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
   if (data_positions->type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
     goto einval;
   n = data_positions->length;
-  if (xmalloc(this->positions, n, sizeof(libqwaitclient_qwait_position_t)))  goto fail;
+  if (xmalloc(this->positions, n, libqwaitclient_qwait_position_t))  goto fail;
   for (i = 0; i < n; i++, this->position_count++)
     {
       libqwaitclient_qwait_position_initialise(this->positions + i);

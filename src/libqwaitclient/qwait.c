@@ -23,6 +23,8 @@
 #include "http-socket.h"
 #include "http-message.h"
 #include "json.h"
+#include "qwait-position.h"
+#include "qwait-queue.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -36,10 +38,12 @@ int main(int argc, char** argv)
   libqwaitclient_http_socket_t sock;
   libqwaitclient_http_message_t msg;
   libqwaitclient_json_t json;
+  libqwaitclient_qwait_queue_t queue;
   
   (void) argc;
   
   memset(&json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_qwait_queue_initialise(&queue);
   libqwaitclient_http_message_zero_initialise(&msg);
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   
@@ -50,17 +54,21 @@ int main(int argc, char** argv)
   t (libqwaitclient_http_socket_connect(&sock));
   t (libqwaitclient_http_socket_send(&sock, &msg));
   t (libqwaitclient_http_socket_receive(&sock));
-  
   printf("%.*s\n\n", (int)(sock.message.content_size), sock.message.content);
   
   t (libqwaitclient_json_parse(&json, sock.message.content, sock.message.content_size));
-  
   libqwaitclient_json_dump(&json, stdout);
+  printf("\n");
+  
+  libqwaitclient_qwait_queue_parse(&queue, &json);
+  libqwaitclient_qwait_queue_dump(&queue, stdout);
+  printf("\n");
   
   libqwaitclient_http_socket_disconnect(&sock);
   libqwaitclient_http_socket_destroy(&sock);
   libqwaitclient_http_message_destroy(&msg);
   libqwaitclient_json_destroy(&json);
+  libqwaitclient_qwait_queue_destroy(&queue);
   return 0;
   
  fail:
@@ -69,6 +77,7 @@ int main(int argc, char** argv)
   libqwaitclient_http_socket_destroy(&sock);
   libqwaitclient_http_message_destroy(&msg);
   libqwaitclient_json_destroy(&json);
+  libqwaitclient_qwait_queue_destroy(&queue);
   return 1;
 }
 
