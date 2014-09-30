@@ -22,7 +22,6 @@
 #include "libqwaitclient/config.h"
 #include "libqwaitclient/http-message.h"
 #include "libqwaitclient/http-socket.h"
-#include "libqwaitclient/macros.h"
 #include "libqwaitclient/qwait-position.h"
 #include "libqwaitclient/qwait-protocol.h"
 #include "libqwaitclient/qwait-queue.h"
