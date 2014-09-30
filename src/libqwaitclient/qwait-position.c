@@ -62,7 +62,6 @@ void libqwaitclient_qwait_position_destroy(_this_)
 int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* restrict data)
 {
   size_t i, n = data->length;
-  int saved_errno;
   
   if (data->type != LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
     return errno = EINVAL, -1;
@@ -70,6 +69,7 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
 #define test(want)  ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
 #define zstr()      libqwaitclient_json_to_zstr(&(data->data.object[i].value))
   
+  /* Read information. */
   for (i = 0; i < n; i++)
     {
       char* name = data->data.object[i].name;
@@ -88,10 +88,16 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
 	  this->enter_time_mseconds = (int)(when->data.integer % 1000);
 	}
       else
-	{
-	  goto einval;
-	}
+	goto einval;
     }
+  
+  /* Check that everything was found. */
+  if (this->location  == NULL)  goto einval;
+  if (this->comment   == NULL)  goto einval;
+  if (this->user_id   == NULL)  goto einval;
+  if (this->real_name == NULL)  goto einval;
+  if (this->enter_time_seconds == 0)
+    goto einval; /* Nobody entered to queue over 44 years ago, it did not exist */
   
 #undef zstr
 #undef test
@@ -99,11 +105,8 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
   return 0;
   
  einval:
-  errno = EINVAL;
-  saved_errno = errno;
   libqwaitclient_qwait_position_destroy(this);
-  errno = saved_errno;
-  return -1;
+  return errno = EINVAL, -1;
 }
 
 
