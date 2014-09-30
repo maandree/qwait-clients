@@ -28,7 +28,7 @@
 /**
  * A queue for a class
  */
-typedef struct libqwaitclients_qwait_queue
+typedef struct libqwaitclient_qwait_queue
 {
   /**
    * The queue's ID
@@ -73,14 +73,14 @@ typedef struct libqwaitclients_qwait_queue
   /**
    * Entries in the queue
    */
-  libqwaitclients_qwait_position_t* restrict positions;
+  libqwaitclient_qwait_position_t* restrict positions;
   
   /**
    * The number of elements in `positions`
    */
   size_t position_count;
   
-} libqwaitclients_qwait_queue_t;
+} libqwaitclient_qwait_queue_t;
 
 
 
@@ -108,7 +108,7 @@ void libqwaitclient_qwait_queue_destroy(_this_);
  * @param   data  The data to parse
  * @return        Zero on success, -1 on error
  */
-int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclients_json_t* restrict data);
+int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restrict data);
 
 /**
  * Compares the title of queues
@@ -128,7 +128,7 @@ int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b);
 void libqwaitclient_qwait_queue_dump(_this_, FILE* output);
 
 
-#undef __this__
+#undef _this_
 
 
 #endif

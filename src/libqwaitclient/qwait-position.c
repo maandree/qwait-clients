@@ -61,52 +61,62 @@ void libqwaitclient_qwait_position_destroy(_this_)
  */
 int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* restrict data)
 {
+  const libqwaitclient_json_t* restrict data_location   = NULL;
+  const libqwaitclient_json_t* restrict data_comment    = NULL;
+  const libqwaitclient_json_t* restrict data_user_id    = NULL;
+  const libqwaitclient_json_t* restrict data_real_name  = NULL;
+  const libqwaitclient_json_t* restrict data_enter_time = NULL;
   size_t i, n = data->length;
+  int saved_errno;
   
   if (data->type != LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
     return errno = EINVAL, -1;
   
 #define test(want)  ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
-#define zstr()      libqwaitclient_json_to_zstr(&(data->data.object[i].value))
   
   /* Read information. */
   for (i = 0; i < n; i++)
     {
+      const libqwaitclient_json_t* restrict value = &(data->data.object[i].value);
       char* name = data->data.object[i].name;
       size_t len = data->data.object[i].name_length;
       
-      if      (test("location"))      this->location  = zstr();
-      else if (test("comment"))       this->comment   = zstr();
-      else if (test("userName"))      this->user_id   = zstr();
-      else if (test("readableName"))  this->real_name = zstr();
-      else if (test("startTime"))
-	{
-	  const libqwaitclient_json_t* restrict when = &(data->data.object[i].value);
-	  if (data->type != LIBQWAITCLIENTS_JSON_TYPE_INTEGER)
-	    goto einval;
-	  this->enter_time_seconds = (time_t)(when->data.integer / 1000);
-	  this->enter_time_mseconds = (int)(when->data.integer % 1000);
-	}
+      if      (test("location"))      data_location   = value;
+      else if (test("comment"))       data_comment    = value;
+      else if (test("userName"))      data_user_id    = value;
+      else if (test("readableName"))  data_real_name  = value;
+      else if (test("startTime"))     data_enter_time = value;
       else
 	goto einval;
     }
   
   /* Check that everything was found. */
-  if (this->location  == NULL)  goto einval;
-  if (this->comment   == NULL)  goto einval;
-  if (this->user_id   == NULL)  goto einval;
-  if (this->real_name == NULL)  goto einval;
-  if (this->enter_time_seconds == 0)
-    goto einval; /* Nobody entered to queue over 44 years ago, it did not exist */
+  if (data_location   == NULL)  goto einval;
+  if (data_comment    == NULL)  goto einval;
+  if (data_user_id    == NULL)  goto einval;
+  if (data_real_name  == NULL)  goto einval;
+  if (data_enter_time == NULL)  goto einval;
   
-#undef zstr
+  /* Evaluate data. */
+  if ((this->location  = libqwaitclient_json_to_zstr(data_location))  == NULL)  goto fail;
+  if ((this->comment   = libqwaitclient_json_to_zstr(data_comment))   == NULL)  goto fail;
+  if ((this->user_id   = libqwaitclient_json_to_zstr(data_user_id))   == NULL)  goto fail;
+  if ((this->real_name = libqwaitclient_json_to_zstr(data_real_name)) == NULL)  goto fail;
+  if (data_enter_time->type != LIBQWAITCLIENTS_JSON_TYPE_INTEGER)
+    goto einval;
+  this->enter_time_seconds = (time_t)(data_enter_time->data.integer / 1000);
+  this->enter_time_mseconds   = (int)(data_enter_time->data.integer % 1000);
+  
 #undef test
   
   return 0;
   
  einval:
+  errno = EINVAL;
+ fail:
+  saved_errno = errno;
   libqwaitclient_qwait_position_destroy(this);
-  return errno = EINVAL, -1;
+  return errno = saved_errno, -1;
 }
 
 

@@ -199,12 +199,28 @@ typedef struct libqwaitclient_json_association
 void libqwaitclient_json_destroy(_this_);
 
 /**
+ * Convert a JSON boolean to a booleanic `int`
+ * 
+ * @param   this  The JSON boolean
+ * @return        1 if true, 0 if false, -1 on error
+ */
+int libqwaitclient_json_to_bool(const _this_) __attribute__((pure));
+
+/**
  * Convert a JSON string to a NUL-terminated string
  * 
  * @param   this  The JSON string
  * @return        The string in NUL-terminated format, `NULL` on error
  */
-char* libqwaitclient_json_to_zstr(_this_);
+char* libqwaitclient_json_to_zstr(const _this_);
+
+/**
+ * Convert a JSON string array to an array of NUL-terminated strings
+ * 
+ * @param   this  The JSON string
+ * @return        The array of NUL-termianted strings, `NULL` on error
+ */
+char* restrict* libqwaitclient_json_to_zstrs(const _this_);
 
 /**
  * Parse a JSON structure

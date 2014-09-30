@@ -86,12 +86,27 @@ void libqwaitclient_json_destroy(_this_)
 
 
 /**
+ * Convert a JSON boolean to a booleanic `int`
+ * 
+ * @param   this  The JSON boolean
+ * @return        1 if true, 0 if false, -1 on error
+ */
+int libqwaitclient_json_to_bool(const _this_)
+{
+  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_BOOLEAN)
+    return D("expected boolean type",), errno = EINVAL, -1;
+  
+  return this->data.boolean ? 1 : 0;
+}
+
+
+/**
  * Convert a JSON string to a NUL-terminated string
  * 
  * @param   this  The JSON string
  * @return        The string in NUL-terminated format, `NULL` on error
  */
-char* libqwaitclient_json_to_zstr(_this_)
+char* libqwaitclient_json_to_zstr(const _this_)
 {
   char* rc;
   
@@ -105,6 +120,39 @@ char* libqwaitclient_json_to_zstr(_this_)
   rc[this->length] = '\0';
   
   return rc;
+}
+
+
+/**
+ * Convert a JSON string array to an array of NUL-terminated strings
+ * 
+ * @param   this  The JSON string
+ * @return        The array of NUL-termianted strings, `NULL` on error
+ */
+char* restrict* libqwaitclient_json_to_zstrs(const _this_)
+{
+  char* restrict* rc;
+  size_t i, n = this->length;
+  int saved_errno;
+  
+  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
+    return D("expected string type",), errno = EINVAL, NULL;
+  
+  if (xmalloc(rc, n, char*))
+    return NULL;
+  
+  for (i = 0; i < n; i++)
+    if ((rc[i] = libqwaitclient_json_to_zstr(this->data.array + i)) == NULL)
+      goto fail;
+  
+  return errno = 0, rc;
+  
+ fail:
+  saved_errno = errno;
+  for (n = 0; n < i; n++)
+    free(rc[n]);
+  free((char**)rc);
+  return errno = saved_errno, NULL;
 }
 
 

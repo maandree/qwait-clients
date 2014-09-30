@@ -112,7 +112,7 @@ int libqwaitclient_qwait_position_compare_by_time(const void* a, const void* b);
 void libqwaitclient_qwait_position_dump(_this_, FILE* output);
 
 
-#undef __this__
+#undef _this_
 
 
 #endif
