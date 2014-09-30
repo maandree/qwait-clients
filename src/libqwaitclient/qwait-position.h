@@ -28,12 +28,12 @@
 /**
  * An entry in a queue
  */
-typedef struct libqwaitclients_qwait_position
+typedef struct libqwaitclient_qwait_position
 {
   /**
    * Where the student is sitting
    */
-  char* restrict position;
+  char* restrict location;
   
   /**
    * Comment left by the student, such as presentation
@@ -57,14 +57,14 @@ typedef struct libqwaitclients_qwait_position
    * The wall-clock time the student entered the queue,
    * in POSIX time (whole seconds)
    */
-  time_t start_time_seconds;
+  time_t enter_time_seconds;
   
   /**
-   * Millisecond counterpart to `start_time_seconds`
+   * Millisecond counterpart to `enter_time_seconds`
    */
-  int start_time_mseconds;
+  int enter_time_mseconds;
   
-} libqwaitclients_qwait_position_t;
+} libqwaitclient_qwait_position_t;
 
 
 
@@ -92,7 +92,7 @@ void libqwaitclient_qwait_position_destroy(_this_);
  * @param   data  The data to parse
  * @return        Zero on success, -1 on error
  */
-int libqwaitclient_qwait_position_parse(_this_, const libqwaitclients_json_t* restrict data);
+int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* restrict data);
 
 /**
  * Compares the time of entry for two queue entries

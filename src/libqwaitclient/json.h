@@ -199,6 +199,14 @@ typedef struct libqwaitclient_json_association
 void libqwaitclient_json_destroy(_this_);
 
 /**
+ * Convert a JSON string to a NUL-terminated string
+ * 
+ * @param   this  The JSON string
+ * @return        The string in NUL-terminated format, `NULL` on error
+ */
+char* libqwaitclient_json_to_zstr(_this_);
+
+/**
  * Parse a JSON structure
  * 
  * @param   this    The JSON structure to fill in

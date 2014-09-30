@@ -86,6 +86,29 @@ void libqwaitclient_json_destroy(_this_)
 
 
 /**
+ * Convert a JSON string to a NUL-terminated string
+ * 
+ * @param   this  The JSON string
+ * @return        The string in NUL-terminated format, `NULL` on error
+ */
+char* libqwaitclient_json_to_zstr(_this_)
+{
+  char* rc;
+  
+  if (this->type != LIBQWAITCLIENTS_JSON_TYPE_STRING)
+    return D("expected string type",), errno = EINVAL, NULL;
+  
+  if (xmalloc(rc, this->length + 1, char))
+    return NULL;
+  
+  memcpy(rc, this->data.string, this->length * sizeof(char));
+  rc[this->length] = '\0';
+  
+  return rc;
+}
+
+
+/**
  * Parse a part of a JSON structure that is a string
  * 
  * @param   this    The JSON structure to fill in
@@ -713,6 +736,8 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
     {
       this->type = LIBQWAITCLIENTS_JSON_TYPE_OBJECT;
       return libqwaitclient_json_subparse_object(this, code, length);
+      /* We will assume that key duplication does not occur,
+	 instead of testing for it. */
     }
   
   /* Null, true, and false are keyword that are easily distinguishable
