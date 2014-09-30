@@ -188,5 +188,5 @@ void libqwaitclient_qwait_queue_dump(_this_, FILE* output)
 }
 
 
-#undef __this__
+#undef _this_
 
