@@ -22,6 +22,7 @@
 #include "qwait-queue.h"
 #include "http-socket.h"
 
+#define _GNU_SOURCE
 #include <stddef.h>
 
 

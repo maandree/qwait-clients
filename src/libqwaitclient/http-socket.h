@@ -21,6 +21,7 @@
 
 #include "http-message.h"
 
+#define _GNU_SOURCE
 #include <stdint.h>
 
 

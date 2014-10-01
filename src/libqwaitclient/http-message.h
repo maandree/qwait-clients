@@ -19,6 +19,7 @@
 #define LIBQWAITCLIENT_MESSAGE_H
 
 
+#define _GNU_SOURCE
 #include <stddef.h>
 
 

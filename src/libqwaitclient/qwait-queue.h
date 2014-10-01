@@ -22,6 +22,7 @@
 #include "json.h"
 #include "qwait-position.h"
 
+#define _GNU_SOURCE
 #include <stddef.h>
 
 
