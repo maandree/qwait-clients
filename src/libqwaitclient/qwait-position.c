@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define _GNU_SOURCE
 #include "qwait-position.h"
 
 #include "macros.h"
@@ -231,19 +232,19 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
   
   /* The time of the day. */
   time->msec = this->enter_time_mseconds;
-  time->sec  = (int)(s % 60), s /= 60;
-  time->min  = (int)(s % 60), s /= 60;
-  time->hour = (int)(s % 24), s /= 24;
+  time->sec  = (unsigned)(s % 60), s /= 60;
+  time->min  = (unsigned)(s % 60), s /= 60;
+  time->hour = (unsigned)(s % 24), s /= 24;
   
   /* Epoch translation, from 1970-01-01 to 2001-01-01. */
   s -= 978307200L / (24L * 60L * 60L);
   time->year = 2001;
   
   /* 2001-01-01 is an awesome epoch: simple fast year calculation */
-  time->year += (s / 146097) * 400, s %= 146097;
-  time->year += (s /  36524) * 100, s %=  36524;
-  time->year += (s /   1461) *   4, s %=   1461;
-  time->year += (s /    365) *   1, s %=    365;
+  time->year += (signed)(s / 146097) * 400, s %= 146097;
+  time->year += (signed)(s /  36524) * 100, s %=  36524;
+  time->year += (signed)(s /   1461) *   4, s %=   1461;
+  time->year += (signed)(s /    365) *   1, s %=    365;
   
   /* And trivial day of the week calculation. */
   time->wday = s % 7;
@@ -259,18 +260,18 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
                (m > 3 ? 30 : 0) + (m > 4 ? 31 : 0) + (m > 5 ? 30 : 0) +		\
                (m > 6 ? 31 : 0) + (m > 7 ? 31 : 0) + (m > 8 ? 30 : 0) +		\
 	       (m > 9 ? 31 : 0) + (m > 10 ? 30 : 0) + (m > 1 ? is_leap : 0))
-  if      (s <  M(1))  time->month =  1, time->day = s -  M(0) + 1;
-  else if (s <  M(2))  time->month =  2, time->day = s -  M(1) + 1;
-  else if (s <  M(3))  time->month =  3, time->day = s -  M(2) + 1;
-  else if (s <  M(4))  time->month =  4, time->day = s -  M(3) + 1;
-  else if (s <  M(5))  time->month =  5, time->day = s -  M(4) + 1;
-  else if (s <  M(6))  time->month =  6, time->day = s -  M(5) + 1;
-  else if (s <  M(7))  time->month =  7, time->day = s -  M(6) + 1;
-  else if (s <  M(8))  time->month =  8, time->day = s -  M(7) + 1;
-  else if (s <  M(9))  time->month =  9, time->day = s -  M(8) + 1;
-  else if (s < M(10))  time->month = 10, time->day = s -  M(9) + 1;
-  else if (s < M(11))  time->month = 11, time->day = s - M(10) + 1;
-  else                 time->month = 12, time->day = s - M(11) + 1;
+  if      (s <  M(1))  time->month =  1, time->day = (unsigned)(s -  M(0) + 1);
+  else if (s <  M(2))  time->month =  2, time->day = (unsigned)(s -  M(1) + 1);
+  else if (s <  M(3))  time->month =  3, time->day = (unsigned)(s -  M(2) + 1);
+  else if (s <  M(4))  time->month =  4, time->day = (unsigned)(s -  M(3) + 1);
+  else if (s <  M(5))  time->month =  5, time->day = (unsigned)(s -  M(4) + 1);
+  else if (s <  M(6))  time->month =  6, time->day = (unsigned)(s -  M(5) + 1);
+  else if (s <  M(7))  time->month =  7, time->day = (unsigned)(s -  M(6) + 1);
+  else if (s <  M(8))  time->month =  8, time->day = (unsigned)(s -  M(7) + 1);
+  else if (s <  M(9))  time->month =  9, time->day = (unsigned)(s -  M(8) + 1);
+  else if (s < M(10))  time->month = 10, time->day = (unsigned)(s -  M(9) + 1);
+  else if (s < M(11))  time->month = 11, time->day = (unsigned)(s - M(10) + 1);
+  else                 time->month = 12, time->day = (unsigned)(s - M(11) + 1);
 #undef M
   
   return 0;
@@ -310,10 +311,10 @@ int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct t
   if (ms < 0)  s -= 1, ms += 1000;
   
   time->msec = ms;
-  time->sec  = (int)(s % 60), s /= 60;
-  time->min  = (int)(s % 60), s /= 60;
-  time->hour = (int)(s % 24), s /= 24;
-  time->day  = (int)s;
+  time->sec  = (unsigned)(s % 60), s /= 60;
+  time->min  = (unsigned)(s % 60), s /= 60;
+  time->hour = (unsigned)(s % 24), s /= 24;
+  time->day  = (unsigned)s;
   
   return 0;
 }
