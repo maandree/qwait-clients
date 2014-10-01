@@ -79,7 +79,7 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
   size_t i, n = data->length;
   int saved_errno;
   
-  if (data->type != LIBQWAITCLIENTS_JSON_TYPE_OBJECT)
+  if (data->type != LIBQWAITCLIENT_JSON_TYPE_OBJECT)
     return errno = EINVAL, -1;
   
 #define test(want)  ((strlen(want) == len) && !memcmp(name, want, len * sizeof(char)))
@@ -124,7 +124,7 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
     if (errno)
       goto fail;
   this->moderator_count = data_moderators->length;
-  if (data_positions->type != LIBQWAITCLIENTS_JSON_TYPE_ARRAY)
+  if (data_positions->type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
     goto einval;
   n = data_positions->length;
   if (xcalloc(this->positions, n, libqwaitclient_qwait_position_t))  goto fail;
@@ -166,7 +166,7 @@ int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b)
  * @param  this    The queue entry
  * @param  output  The output sink
  */
-void libqwaitclient_qwait_queue_dump(_this_, FILE* output)
+void libqwaitclient_qwait_queue_dump(const _this_, FILE* output)
 {
   size_t i, n;
   

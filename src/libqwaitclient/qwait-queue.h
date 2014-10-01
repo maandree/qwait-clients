@@ -125,7 +125,7 @@ int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b);
  * @param  this    The queue entry
  * @param  output  The output sink
  */
-void libqwaitclient_qwait_queue_dump(_this_, FILE* output);
+void libqwaitclient_qwait_queue_dump(const _this_, FILE* output);
 
 
 #undef _this_

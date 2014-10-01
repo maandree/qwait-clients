@@ -240,7 +240,7 @@ int libqwaitclient_json_parse(_this_, const char* restrict code, size_t length);
  * @param  this    The JSON structure
  * @param  output  The output sink
  */
-void libqwaitclient_json_dump(_this_, FILE* output);
+void libqwaitclient_json_dump(const _this_, FILE* output);
 
 
 #undef _this_

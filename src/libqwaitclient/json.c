@@ -900,7 +900,7 @@ static void libqwaitclient_json_subdump_string(FILE* f, const char* string, size
  * @param  f       The output sink
  * @parma  indent  The size of the indent
  */
-static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
+static void libqwaitclient_json_subdump(const _this_, FILE* f, int indent)
 {
 #define PRIindent  "*.s"
   size_t i, n = this->length;
@@ -998,7 +998,7 @@ static void libqwaitclient_json_subdump(_this_, FILE* f, int indent)
  * @param  this    The JSON structure
  * @param  output  The output sink
  */
-void libqwaitclient_json_dump(_this_, FILE* output)
+void libqwaitclient_json_dump(const _this_, FILE* output)
 {
   libqwaitclient_json_subdump(this, output, 0);
   fprintf(output, "\n");
