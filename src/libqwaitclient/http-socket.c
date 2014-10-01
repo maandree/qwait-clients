@@ -162,7 +162,7 @@ int libqwaitclient_http_socket_connect(_this_)
       break;
     }
   
-  if (r < 0)
+  if (host == NULL)
     goto fail;
   
   this->connected = 1;

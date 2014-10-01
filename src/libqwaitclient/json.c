@@ -740,7 +740,7 @@ static size_t libqwaitclient_json_subparse_number(_this_, const char* restrict c
   this->type = is_float ? LIBQWAITCLIENT_JSON_TYPE_FLOATING : LIBQWAITCLIENT_JSON_TYPE_INTEGER;
   
   /* Parse the value. */
-  if (is_float)
+  if (this->type == LIBQWAITCLIENT_JSON_TYPE_FLOATING)
     r = libqwaitclient_json_subparse_floating(this, code, part_length);
   else
     r = libqwaitclient_json_subparse_integer(this, code, part_length);
