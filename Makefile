@@ -46,6 +46,7 @@ WARN += -Wdouble-promotion -Wtrampolines -Wsign-conversion -Wsync-nand  \
         -Wunsafe-loop-optimizations -fstack-usage -ftree-vrp            \
 	-fipa-pure-const -funsafe-loop-optimizations
 
+LIBQWAITCLIENT_LIBFLAGS = -lrt
 
 LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue
 
@@ -53,11 +54,15 @@ LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol
 # Build rules.
 
 .PHONY: all
-all: $(foreach O,$(LIBQWAITCLIENT_OBJ) test,obj/libqwaitclient/$(O).o)
+all: bin/libqwaitclient/test
 
 obj/libqwaitclient/%.o: src/libqwaitclient/%.c src/libqwaitclient/*.h
 	@mkdir -p obj/libqwaitclient
-	$(CC) $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS) -fPIC -c $< -o $@
+
+bin/libqwaitclient/test: $(foreach O,$(LIBQWAITCLIENT_OBJ) test,obj/libqwaitclient/$(O).o)
+	@mkdir -p bin/libqwaitclient
+	$(CC) $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $^ -o $@
 
 # Clean rules.
 
