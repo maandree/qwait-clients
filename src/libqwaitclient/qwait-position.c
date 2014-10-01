@@ -17,13 +17,19 @@
  */
 #include "qwait-position.h"
 
+#include "macros.h"
+#include "json.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/time.h>
 
 
 #define  _this_  libqwaitclient_qwait_position_t* restrict this
+#define  _time_  libqwaitclient_qwait_position_time_t* restrict time
 
 
 /**
@@ -152,13 +158,210 @@ int libqwaitclient_qwait_position_compare_by_time(const void* a, const void* b)
  * @param  this    The queue entry
  * @param  output  The output sink
  */
-void libqwaitclient_qwait_position_dump(_this_, FILE* output)
+void libqwaitclient_qwait_position_dump(const _this_, FILE* output)
 {
-  fprintf(output, "\"%s\"(%s) @ %s: %s, entered %ji.%03i\n",
+  libqwaitclient_qwait_position_time_t enter_time;
+  libqwaitclient_qwait_position_time_t enter_diff;
+  char* str_time = NULL;
+  char* str_diff = NULL;
+  
+  if (!libqwaitclient_qwait_position_parse_time(this, &enter_time, 0))
+    str_time = libqwaitclient_qwait_position_string_time(&enter_time);
+  if (!libqwaitclient_qwait_position_diff_time(this, &enter_diff, NULL))
+    str_diff = libqwaitclient_qwait_position_string_time(&enter_diff);
+  
+  fprintf(output, "\"%s\"(%s) @ %s: %s, entered %ji.%03i (%s; %s)\n",
 	  this->real_name, this->user_id, this->location, this->comment,
-	  (intmax_t)(this->enter_time_seconds), this->enter_time_mseconds);
+	  (intmax_t)(this->enter_time_seconds), this->enter_time_mseconds,
+	  str_time, str_diff);
 }
 
 
+/**
+ * Get the time a entry was added to its queue
+ * 
+ * @param   this   The queue entry
+ * @param   time   Output parameter for when the entry was added to the queue
+ * @param   local  Whether to return in local time rather than UTC
+ * @return         Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
+{
+  /* We assume that the server is correct and that the time is positive,
+   * and that the year is at least 2001. */
+  
+  time_t s = this->enter_time_seconds;
+  int is_leap;
+  
+  time->is_difference = 0;
+  
+  /* Zero initialise timezone. */
+  memset(time->timezone, 0, sizeof(time->timezone));
+  time->sign = 0;
+  time->timezone_h = 0;
+  time->timezone_m = 0;
+  
+  if (!local)
+    sprintf(time->timezone, "UTC");
+  else
+    {
+      struct timeval _time; /* First argument of gettimeofday must not be `NULL`. */
+      struct timezone tz_;
+      int tz;
+      
+      if (gettimeofday(&_time, &tz_) < 0)
+	return -1;
+      tz = -(tz_.tz_minuteswest);
+      tzset();
+      sprintf(time->timezone, "%s", tzname[((-timezone) / 60 == tz) ? 0 : 1]);
+      /* Someone choose to invert it, probably because it is faster
+         to do TIME - TZ than TIME + TZ to get the local time.
+         (Or because they are America-centric, just like when having
+	 Sunday be the first day of the week.) */
+      
+      /* Timezone offset */
+      tz *= time->sign = tz < 0 ? -1 : tz > 0 ? 1 : 0;
+      time->timezone_h = tz / 60;
+      time->timezone_m = tz % 60;
+      
+      /* Add the offset to the time, we want it to be local. */
+      s += time->sign * (signed)(time->timezone_m) * 60;
+      s += time->sign * (signed)(time->timezone_h) * 60 * 60;
+    }
+  
+  /* The time of the day. */
+  time->msec = this->enter_time_mseconds;
+  time->sec  = (int)(s % 60), s /= 60;
+  time->min  = (int)(s % 60), s /= 60;
+  time->hour = (int)(s % 24), s /= 24;
+  
+  /* Epoch translation, from 1970-01-01 to 2001-01-01. */
+  s -= 978307200L / (24L * 60L * 60L);
+  time->year = 2001;
+  
+  /* 2001-01-01 is an awesome epoch: simple fast year calculation */
+  time->year += (s / 146097) * 400, s %= 146097;
+  time->year += (s /  36524) * 100, s %=  36524;
+  time->year += (s /   1461) *   4, s %=   1461;
+  time->year += (s /    365) *   1, s %=    365;
+  
+  /* And trivial day of the week calculation. */
+  time->wday = s % 7;
+  
+  /* If we are on a leapyear, February is one day longer. */
+  is_leap = ((time->year % 4) == 0) && ((time->year % 100) != 0);
+  is_leap |= (time->year % 400) == 0;
+  is_leap = is_leap ? 1 : 0;
+  
+  /* Calculate month and day by checking the day of the year. */
+#define M(m)  (time_t)(								\
+               (m > 0 ? 31 : 0) + (m > 1 ? 28 : 0) + (m > 2 ? 31 : 0) +		\
+               (m > 3 ? 30 : 0) + (m > 4 ? 31 : 0) + (m > 5 ? 30 : 0) +		\
+               (m > 6 ? 31 : 0) + (m > 7 ? 31 : 0) + (m > 8 ? 30 : 0) +		\
+	       (m > 9 ? 31 : 0) + (m > 10 ? 30 : 0) + (m > 1 ? is_leap : 0))
+  if      (s <  M(1))  time->month =  1, time->day = s -  M(0) + 1;
+  else if (s <  M(2))  time->month =  2, time->day = s -  M(1) + 1;
+  else if (s <  M(3))  time->month =  3, time->day = s -  M(2) + 1;
+  else if (s <  M(4))  time->month =  4, time->day = s -  M(3) + 1;
+  else if (s <  M(5))  time->month =  5, time->day = s -  M(4) + 1;
+  else if (s <  M(6))  time->month =  6, time->day = s -  M(5) + 1;
+  else if (s <  M(7))  time->month =  7, time->day = s -  M(6) + 1;
+  else if (s <  M(8))  time->month =  8, time->day = s -  M(7) + 1;
+  else if (s <  M(9))  time->month =  9, time->day = s -  M(8) + 1;
+  else if (s < M(10))  time->month = 10, time->day = s -  M(9) + 1;
+  else if (s < M(11))  time->month = 11, time->day = s - M(10) + 1;
+  else                 time->month = 12, time->day = s - M(11) + 1;
+#undef M
+  
+  return 0;
+}
+
+
+/**
+ * Calculate how long ago a entry was added to its queue
+ * 
+ * @param   this  The queue entry
+ * @param   time  Output parameter for how long ago the entry was added to the queue
+ * @param   now   Please set to `&t` where `t` is set by `clock_gettime(CLOCK_REALTIME, &t)`
+ * @return        Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct timespec* restrict now)
+{
+  struct timespec now_;
+  time_t s;
+  int ms;
+  
+  if (now == NULL)
+    {
+      if (clock_gettime(CLOCK_REALTIME, &now_) < 0)
+	return -1;
+      now = &now_;
+    }
+  
+  s = now->tv_sec - this->enter_time_seconds;
+  ms = (int)((now->tv_nsec + 500000L) / 1000000L) - this->enter_time_mseconds;
+  
+  time->is_difference = 1,  time->sign =  s < 0 ? -1 :  s > 0 ? 1 : 0;
+  if (time->sign == 0)      time->sign = ms < 0 ? -1 : ms > 0 ? 1 : 0;
+  if (time->sign < 0)
+    s = -s, ms = -ms;
+  
+  if (ms > 0)  s += 1, ms -= 1000;
+  if (ms < 0)  s -= 1, ms += 1000;
+  
+  time->msec = ms;
+  time->sec  = (int)(s % 60), s /= 60;
+  time->min  = (int)(s % 60), s /= 60;
+  time->hour = (int)(s % 24), s /= 60;
+  time->day  = (int)s;
+  
+  return 0;
+}
+
+
+/**
+ * Make a human-readable string of the time created by
+ * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
+ * 
+ * @param   time  The time the entry was added to the queue or how long ago that was
+ * @return        The time information as a free:able string, `NULL` on error
+ */
+char* libqwaitclient_qwait_position_string_time(const _time_)
+{
+  static const char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+				  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+  char* buf;
+  if (xmalloc(buf, 16 + 2 * 3 * sizeof(unsigned), char)) /* a bit excessive */
+    return NULL;
+  
+  if (time->is_difference == 0)
+    {
+      sprintf(buf, "%u %s %02u:%02u", time->day, months[time->month - 1], time->hour, time->min);
+      return buf;
+    }
+  else if (time->day  == 1)  sprintf(buf,  "1 day");
+  else if (time->day  >= 2)  sprintf(buf, "%u days", time->day);
+  else if (time->hour == 1)  sprintf(buf,  "1 hour");
+  else if (time->hour >= 2)  sprintf(buf, "%u hours", time->hour);
+  else if (time->min  == 1)  sprintf(buf,  "1 minute");
+  else if (time->min  >= 2)  sprintf(buf, "%u minutes", time->min);
+  else if (time->sec  >= 5)  sprintf(buf, "%u seconds", time->sec);
+  else
+    {
+      sprintf(buf, "Now");
+      return buf;
+    }
+  
+  if (time->sign < 0)
+    {
+      memmove(buf + 3, buf, (strlen(buf) + 1) * sizeof(char));
+      memcpy(buf, "In ", strlen("In ") * sizeof(char));
+    }
+  
+  return buf;
+}
+
+
+#undef _time_
 #undef _this_
 
