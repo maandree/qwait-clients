@@ -142,7 +142,7 @@ int libqwaitclient_qwait_position_compare_by_time(const void* a, const void* b)
   const libqwaitclient_qwait_position_t* a_ = a;
   const libqwaitclient_qwait_position_t* b_ = b;
   
-#define cmp(p, q)  ((q) < (p) ? -1 : (q) > (p) ? 1 : 0)
+#define cmp(p, q)  ((p) < (q) ? -1 : (p) > (q) ? 1 : 0)
   
   if (a_->enter_time_seconds == b_->enter_time_seconds)
     return cmp(a_->enter_time_mseconds, b_->enter_time_mseconds);
@@ -165,7 +165,7 @@ void libqwaitclient_qwait_position_dump(const _this_, FILE* output)
   char* str_time = NULL;
   char* str_diff = NULL;
   
-  if (!libqwaitclient_qwait_position_parse_time(this, &enter_time, 0))
+  if (!libqwaitclient_qwait_position_parse_time(this, &enter_time, 1))
     str_time = libqwaitclient_qwait_position_string_time(&enter_time);
   if (!libqwaitclient_qwait_position_diff_time(this, &enter_diff, NULL))
     str_diff = libqwaitclient_qwait_position_string_time(&enter_diff);
@@ -312,7 +312,7 @@ int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct t
   time->msec = ms;
   time->sec  = (int)(s % 60), s /= 60;
   time->min  = (int)(s % 60), s /= 60;
-  time->hour = (int)(s % 24), s /= 60;
+  time->hour = (int)(s % 24), s /= 24;
   time->day  = (int)s;
   
   return 0;

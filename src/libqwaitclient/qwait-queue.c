@@ -132,6 +132,11 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
     if (libqwaitclient_qwait_position_parse(this->positions + i, data_positions->data.array + i) < 0)
       goto fail;
   
+  /* Order positions by time. */
+  qsort(this->positions, this->position_count,
+	sizeof(libqwaitclient_qwait_position_t),
+	libqwaitclient_qwait_position_compare_by_time);
+  
   return 0;
   
  einval:
