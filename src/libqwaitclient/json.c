@@ -129,9 +129,9 @@ char* libqwaitclient_json_to_zstr(const _this_)
  * @param   this  The JSON string
  * @return        The array of NUL-termianted strings, `NULL` on error
  */
-char* restrict* libqwaitclient_json_to_zstrs(const _this_)
+char** libqwaitclient_json_to_zstrs(const _this_)
 {
-  char* restrict* rc;
+  char** rc;
   size_t i, n = this->length;
   int saved_errno;
   
@@ -197,7 +197,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       else if (c == '"')   break;
     }
   if (i == length)
-    return D("premature end of string",), errno = EINVAL, 0;
+    return D("premature end of string",), errno = EINVAL, 0U;
   length = i;
   read_length = i + 2;
   
@@ -217,7 +217,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	{
 	  /* Check that a new character do not start here. */
 	  if ((c & 0xC0) != 0x80)
-	    return D("new character during multibyte character",), free(utf32), errno = EINVAL, 0;
+	    return D("new character during multibyte character",), free(utf32), errno = EINVAL, 0U;
 	  
 	  /* Continued reading of multibyte-character. */
 	  n--;
@@ -233,13 +233,13 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	utf32[j++] = (int32_t)c;
       else if ((c & 0xC0) == 0x80)
 	/* Non-first byte in multibyte-character at being of character. */
-	return D("multibyte-character without start",), free(utf32), errno = EINVAL, 0;
+	return D("multibyte-character without start",), free(utf32), errno = EINVAL, 0U;
       else
 	{
 	  /* First byte in multibyte-character,
 	     get length and most significan bits. */
 	  while ((c & 0x80))
-	    c <<= 1, n++;
+	    c = (unsigned char)(c << 1), n++;
 	  utf32[j] = (int32_t)(c >> n);
 	  n--;
 	}
@@ -247,7 +247,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
   /* Check that multibyte-character has ended, or
      that we ended with a single byte-character. */
   if (n)
-    return D("string ended during multibyte-character",), free(utf32), errno = EINVAL, 0;
+    return D("string ended during multibyte-character",), free(utf32), errno = EINVAL, 0U;
   
   /* Update the length. UTF-32 int:s rather than UTF-8 bytes. */
   length = j;
@@ -263,7 +263,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       if (utf32[i] >> 7)
 	{
 	  if (escape)
-	    return D("non-ASCII used in escape",), free(utf32), errno = EINVAL, 0;
+	    return D("non-ASCII used in escape",), free(utf32), errno = EINVAL, 0U;
 	  utf32[j++] = utf32[i];
 	}
       else if (escape == -1)
@@ -304,7 +304,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	  else if (('a' <= c) && (c <= 'f'))  escaped = (escaped << 4) | (c - 'a' + 1);
 	  else if (('A' <= c) && (c <= 'F'))  escaped = (escaped << 4) | (c - 'A' + 1);
 	  else
-	    return D("non-hexadecimal digit in hexadecimal escape",), free(utf32), errno = EINVAL, 0;
+	    return D("non-hexadecimal digit in hexadecimal escape",), free(utf32), errno = EINVAL, 0U;
 	  if (--escape == 0)
 	    utf32[j++] = escaped, escaped = 0;
 	}
@@ -316,7 +316,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
   if (escape == -2)
     utf32[j++] = escaped;
   else if (escape)
-    return D("string ended during escape",), free(utf32), errno = EINVAL, 0;
+    return D("string ended during escape",), free(utf32), errno = EINVAL, 0U;
   
   /* Update the length. */
   length = j;
@@ -329,7 +329,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       if (escaped)
 	{
 	  if ((c < 0xD800) || (0xDFFF < c))
-	    return D("surrogate without its partner",), free(utf32), errno = EINVAL, 0;
+	    return D("surrogate without its partner",), free(utf32), errno = EINVAL, 0U;
 	  
 	  /* Lowest surrogate is in lead. */
 	  a = escaped, b = c, escaped = 0;
@@ -338,11 +338,11 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	  
 	  /* The lead must not be in [0xDC00, 0xDFFF] */
 	  if (a >= 0xDC00)
-	    return D("both surrogates in a pair are lead",), free(utf32), errno = EINVAL, 0;
+	    return D("both surrogates in a pair are lead",), free(utf32), errno = EINVAL, 0U;
 	  
 	  /* The trail must be in [0xDC00, 0xDFFF] */
 	  if (b < 0xDC00)
-	    return D("both surrogates in a pair are trail",), free(utf32), errno = EINVAL, 0;
+	    return D("both surrogates in a pair are trail",), free(utf32), errno = EINVAL, 0U;
 	  
 	  a &= 0x03FF, b &= 0x03FF;
 	  utf32[j++] = (a << 10) | b;
@@ -353,7 +353,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	utf32[j++] = c;
     }
   if (escaped)
-    return D("string with unpaired surrogate",), free(utf32), errno = EINVAL, 0;
+    return D("string with unpaired surrogate",), free(utf32), errno = EINVAL, 0U;
   
   /* Update the length. */
   length = j;
@@ -365,7 +365,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
      but we know that that our result cannot be longer then the
      original encoding. */
   if (xmalloc(this->data.string, read_length, char))
-    return saved_errno = errno, free(utf32), errno = saved_errno, 0;
+    return saved_errno = errno, free(utf32), errno = saved_errno, 0U;
   
   /* Re-encode. */
 #define utf8  (this->data.string)
@@ -377,7 +377,7 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       /* Check that escape resolving did not resolve in any invalid
          characters (don't bother if the unsigned version overflowed.) */
       if (c & (1LL << 31))
-	return D("character uses the 32:th bit",), free(utf8), errno = EINVAL, 0;
+	return D("character uses the 32:th bit",), free(utf8), errno = EINVAL, 0U;
       
       /* Trivial case. (Needs special attention because the 7:th bit can be used.) */
       if (c < 128)
@@ -388,9 +388,9 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
       
       /* Less trivial case. */
       do
-	utf8[--j] = (c & 0x3F) | 0x80, c >>= 6, prefix |= prefix >> 1;
+	utf8[--j] = (char)((c & 0x3F) | 0x80), c >>= 6, prefix |= prefix >> 1;
       while (c || (utf8[j] & (prefix ^ 0x80)));
-      utf8[j] |= (prefix << 1) & 255;
+      utf8[j] |= (char)((prefix << 1) & 255);
     }
   
   /* Free UTF-32 encode, calculate UTF-8 encoding length, and 
@@ -440,14 +440,14 @@ static size_t libqwaitclient_json_subparse_array(_this_, const char* restrict co
   
   /* It is an error if the code ends without a ']'. */
   if (parsed == length)
-    return D("opened array without elements or closer",), errno = EINVAL, 0;
+    return D("opened array without elements or closer",), errno = EINVAL, 0U;
   
   /* Check for empty array. (Edge case) */
   if (code[parsed] == ']')
     return parsed + 1;
   
   if (xmalloc(this->data.array, allocated, libqwaitclient_json_t))
-    return 0;
+    return 0U;
   
   do
     {
@@ -473,13 +473,13 @@ static size_t libqwaitclient_json_subparse_array(_this_, const char* restrict co
       
       /* It is an error if the code ends without a ']'. */
       if (parsed == length)
-	return D("premature end of array",), errno = EINVAL, 0;
+	return D("premature end of array",), errno = EINVAL, 0U;
       
     } while (code[parsed++] == ',');
   
   /* It is an error if the code ends without a ']'. */
   if (code[parsed - 1] != ']') /* The `while();` increased `parsed`. */
-    return D("array ended but not with the correct symbol",), errno = EINVAL, 0;
+    return D("array ended but not with the correct symbol",), errno = EINVAL, 0U;
   
   /* Shrink the allocated to fit the elements exactly. */
   if (allocated > this->length)
@@ -512,14 +512,14 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
   
   /* It is an error if the code ends without a '}'. */
   if (parsed == length)
-    return D("opened array without elements or closer",), errno = EINVAL, 0;
+    return D("opened array without elements or closer",), errno = EINVAL, 0U;
   
   /* Check for empty object. (Edge case) */
   if (code[parsed] == '}')
     return parsed + 1;
   
   if (xmalloc(this->data.object, allocated, libqwaitclient_json_t))
-    return 0;
+    return 0U;
   
   do
     {
@@ -542,7 +542,7 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
       if (subparsed == 0)
 	return 0;
       if (NEXT.value.type != LIBQWAITCLIENT_JSON_TYPE_STRING)
-	return D("object key was not a string",), this->length++, errno = EINVAL, 0;
+	return D("object key was not a string",), this->length++, errno = EINVAL, 0U;
       NEXT.name = NEXT.value.data.string;
       NEXT.name_length = NEXT.value.length;
       memset(&(NEXT.value), 0, sizeof(libqwaitclient_json_t));
@@ -552,7 +552,7 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
       
       /* ':' delimits a member's name and its value. */
       if ((parsed == length) || (code[parsed++] != ':'))
-	return D("invalid delimiter between object key and value",), free(NEXT.name), errno = EINVAL, 0;
+	return D("invalid delimiter between object key and value",), free(NEXT.name), errno = EINVAL, 0U;
       
       SKIP_JSON_WHITESPACE;
       
@@ -560,28 +560,28 @@ static size_t libqwaitclient_json_subparse_object(_this_, const char* restrict c
       subparsed = libqwaitclient_json_subparse(&(NEXT.value), code + parsed, length - parsed);
       this->length++;
       if (subparsed == 0)
-	return 0;
+	return 0U;
       parsed += subparsed;
       
       SKIP_JSON_WHITESPACE;
       
       /* It is an error if the code ends without a '}'. */
       if (parsed == length)
-	return D("premature end of object",), errno = EINVAL, 0;
+	return D("premature end of object",), errno = EINVAL, 0U;
       
       #undef NEXT
     } while (code[parsed++] == ',');
   
   /* It is an error if the code ends without a '}'. */
   if (code[parsed - 1] != '}') /* The `while();` increased `parsed`. */
-    return D("array ended but not with the correct symbol",), errno = EINVAL, 0;
+    return D("array ended but not with the correct symbol",), errno = EINVAL, 0U;
   
   /* Shrink the allocated to fit the members exactly. */
   if (allocated > this->length)
     {
       libqwaitclient_json_association_t* new = this->data.object;
       if (xrealloc(new, this->length, libqwaitclient_json_association_t) && (this->length))
-	return 0;
+	return 0U;
       this->data.object = new;
     }
   
@@ -668,13 +668,13 @@ static int libqwaitclient_json_subparse_integer(_this_, const char* restrict cod
   /* Large integer! */
  large_integer:
   this->type = LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER;
-  if (xmalloc(this->data.large_integer, neg + length + 1, char))
+  if (xmalloc(this->data.large_integer, (size_t)neg + length + 1, char))
     return -1;
   memcpy(this->data.large_integer + neg, code, length * sizeof(char));
   if (neg)
     this->data.large_integer[0] = '-';
-  this->data.large_integer[neg + length] = '\0';
-  this->length = neg + length;
+  this->data.large_integer[(size_t)neg + length] = '\0';
+  this->length = (size_t)neg + length;
   return 0;
 }
 
@@ -767,7 +767,7 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
   
   /* That would be invalid, and our code below assumes `length` >= 1. */
   if (length == 0)
-    return D("have nothing to parse",), errno = EINVAL, 0;
+    return D("have nothing to parse",), errno = EINVAL, 0U;
   
   /* String, array and object are easy to identify, delegate it, they are complex. */
   if (*code == '"')
@@ -792,11 +792,11 @@ static size_t libqwaitclient_json_subparse(_this_, const char* restrict code, si
    * and there no other alternatives. We parse the them exactly, a caller
    * will fail of there was something more behind them. */
   if ((length >= 4) && !memcmp(code, "null", 4 * sizeof(char)))
-    return this->type = LIBQWAITCLIENT_JSON_TYPE_NULL, 4;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_NULL, 4U;
   else if ((length >= 4) && !memcmp(code, "true", 4 * sizeof(char)))
-    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 1, 4;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 1, 4U;
   else if ((length >= 5) && !memcmp(code, "false", 5 * sizeof(char)))
-    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 0, 5;
+    return this->type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN, this->data.boolean = 0, 5U;
   
   /* Numbers are a bit more complex, delegate it. */
   return libqwaitclient_json_subparse_number(this, code, length);

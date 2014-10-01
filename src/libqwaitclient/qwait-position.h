@@ -33,25 +33,25 @@ typedef struct libqwaitclient_qwait_position
   /**
    * Where the student is sitting
    */
-  char* restrict location;
+  char* location;
   
   /**
    * Comment left by the student, such as presentation
    * or request for help and which exercise it entry
    * concerns
    */
-  char* restrict comment;
+  char* comment;
   
   /**
    * The user ID, that unreadable 8-character [0-9a-z]
    * string starting with "u1"
    */
-  char* restrict user_id;
+  char* user_id;
   
   /**
    * The student's real name
    */
-  char* restrict real_name;
+  char* real_name;
   
   /**
    * The wall-clock time the student entered the queue,
@@ -200,7 +200,7 @@ int libqwaitclient_qwait_position_parse(_this_, const libqwaitclient_json_t* res
  * @param   b  1 is returned if this entry entered the queue before `a`
  * @return     See `a` and `b`, and refer to `qsort(3)`, `strcmp(3)`, et cetera; earlier entries first
  */
-int libqwaitclient_qwait_position_compare_by_time(const void* a, const void* b);
+int libqwaitclient_qwait_position_compare_by_time(const void* a, const void* b) __attribute__((pure));
 
 /**
  * Print a queue entry to a file for debugging

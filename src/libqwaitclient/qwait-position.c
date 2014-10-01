@@ -222,8 +222,8 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
       
       /* Timezone offset */
       tz *= time->sign = tz < 0 ? -1 : tz > 0 ? 1 : 0;
-      time->timezone_h = tz / 60;
-      time->timezone_m = tz % 60;
+      time->timezone_h = (unsigned)tz / 60;
+      time->timezone_m = (unsigned)tz % 60;
       
       /* Add the offset to the time, we want it to be local. */
       s += time->sign * (signed)(time->timezone_m) * 60;
@@ -231,7 +231,7 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
     }
   
   /* The time of the day. */
-  time->msec = this->enter_time_mseconds;
+  time->msec = (unsigned)(this->enter_time_mseconds);
   time->sec  = (unsigned)(s % 60), s /= 60;
   time->min  = (unsigned)(s % 60), s /= 60;
   time->hour = (unsigned)(s % 24), s /= 24;
@@ -247,7 +247,7 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
   time->year += (signed)(s /    365) *   1, s %=    365;
   
   /* And trivial day of the week calculation. */
-  time->wday = s % 7;
+  time->wday = (unsigned)s % 7;
   
   /* If we are on a leapyear, February is one day longer. */
   is_leap = ((time->year % 4) == 0) && ((time->year % 100) != 0);
@@ -310,7 +310,7 @@ int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct t
   if (ms > 0)  s += 1, ms -= 1000;
   if (ms < 0)  s -= 1, ms += 1000;
   
-  time->msec = ms;
+  time->msec = (unsigned)ms;
   time->sec  = (unsigned)(s % 60), s /= 60;
   time->min  = (unsigned)(s % 60), s /= 60;
   time->hour = (unsigned)(s % 24), s /= 24;

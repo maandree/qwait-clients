@@ -220,7 +220,7 @@ char* libqwaitclient_json_to_zstr(const _this_);
  * @param   this  The JSON string
  * @return        The array of NUL-termianted strings, `NULL` on error
  */
-char* restrict* libqwaitclient_json_to_zstrs(const _this_);
+char** libqwaitclient_json_to_zstrs(const _this_);
 
 /**
  * Parse a JSON structure

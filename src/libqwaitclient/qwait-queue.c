@@ -53,8 +53,8 @@ void libqwaitclient_qwait_queue_destroy(_this_)
   for (i = 0, n = this->moderator_count; i < n; i++)  free(this->moderators[i]);
   for (i = 0, n = this->position_count;  i < n; i++)
     libqwaitclient_qwait_position_destroy(this->positions + i);
-  free((char** restrict)(this->owners));
-  free((char** restrict)(this->moderators));
+  free(this->owners);
+  free(this->moderators);
   free(this->positions);
   memset(this, 0, sizeof(libqwaitclient_qwait_queue_t));
 }

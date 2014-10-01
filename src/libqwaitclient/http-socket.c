@@ -136,6 +136,8 @@ int libqwaitclient_http_socket_connect(_this_)
 	case EAI_SERVICE:    return errno = EPROTOTYPE, -1;
 	case EAI_SOCKTYPE:   return errno = ENOTSUP, -1;
 	case EAI_SYSTEM:     return -1;
+	default:
+	  return errno = EREMOTEIO, -1;
 	}
     }
   

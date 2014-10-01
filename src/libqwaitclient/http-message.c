@@ -179,7 +179,7 @@ static int get_content_length(_this_)
 
 	/* Store the message length. */
 	header = this->headers[i] + strlen("Content-Length: ");
-	this->content_size = atol(header);
+	this->content_size = (size_t)atol(header);
 	
 	/* Do not except a length that is not correctly formated. */
 	for (; *header; header++)
@@ -433,9 +433,9 @@ static int receive_chunked_transfer(_this_)
     {
       char c = this->buffer[i];
       chunk_size <<= 4;
-      if      (('0' <= c) && (c <= '9'))  chunk_size |= c - '0' + 0;
-      else if (('a' <= c) && (c <= 'f'))  chunk_size |= c - 'a' + 10;
-      else if (('A' <= c) && (c <= 'F'))  chunk_size |= c - 'A' + 10;
+      if      (('0' <= c) && (c <= '9'))  chunk_size |= (size_t)(c - '0' + 0);
+      else if (('a' <= c) && (c <= 'f'))  chunk_size |= (size_t)(c - 'a' + 10);
+      else if (('A' <= c) && (c <= 'F'))  chunk_size |= (size_t)(c - 'A' + 10);
       else
 	return -2; /* Malformated value, enters unrecoverable state. */
     }

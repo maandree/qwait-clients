@@ -33,12 +33,12 @@ typedef struct libqwaitclient_qwait_queue
   /**
    * The queue's ID
    */
-  char* restrict name;
+  char* name;
   
   /**
    * The queue's name
    */
-  char* restrict title;
+  char* title;
   
   /**
    * Whether the queue is hidden
@@ -53,7 +53,7 @@ typedef struct libqwaitclient_qwait_queue
   /**
    * List of queue owners (user ID:s)
    */
-  char* restrict* restrict owners;
+  char** owners;
   
   /**
    * The number of elements in `owners`
@@ -63,7 +63,7 @@ typedef struct libqwaitclient_qwait_queue
   /**
    * List of queue moderators (user ID:s)
    */
-  char* restrict* restrict moderators;
+  char** moderators;
   
   /**
    * The number of elements in `moderators`
@@ -73,7 +73,7 @@ typedef struct libqwaitclient_qwait_queue
   /**
    * Entries in the queue
    */
-  libqwaitclient_qwait_position_t* restrict positions;
+  libqwaitclient_qwait_position_t* positions;
   
   /**
    * The number of elements in `positions`
@@ -117,7 +117,7 @@ int libqwaitclient_qwait_queue_parse(_this_, const libqwaitclient_json_t* restri
  * @param   b  1 is returned if this queue is an alphabetically lower title than `a`
  * @return     See `a` and `b`, and refer to `qsort(3)`, `strcmp(3)`, et cetera; ascending order
  */
-int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b);
+int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b) __attribute__((pure));
 
 /**
  * Print a queue to a file for debugging
