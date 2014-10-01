@@ -55,7 +55,7 @@ static void print_detailed_queue_info(const libqwaitclient_qwait_queue_t* restri
 {
   size_t i, n;
   
-  printf("\033[01;34m%s\033[00m\n", queue->name);
+  printf("name: \033[01;34m%s\033[00m\n", queue->name);
   printf("title: %s\n", queue->title);
   
   printf("%s", queue->owner_count ? "owners" : "no owners");
