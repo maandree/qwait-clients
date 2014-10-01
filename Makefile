@@ -26,6 +26,11 @@ LICENSEDIR ?= $(DATADIR)/licenses
 PKGNAME ?= qwait-clients
 
 
+SHARED = -shared
+LDSO = -Wl,-soname,libqwaitclient.so
+PIC = -fPIC
+
+
 # Flags to compile with.
 OPTIMISE = -O3 -g
 STD = c99
@@ -46,23 +51,51 @@ WARN += -Wdouble-promotion -Wtrampolines -Wsign-conversion -Wsync-nand  \
         -Wunsafe-loop-optimizations -fstack-usage -ftree-vrp            \
 	-fipa-pure-const -funsafe-loop-optimizations
 
-LIBQWAITCLIENT_LIBFLAGS = -lrt
+C_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS)
+LD_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS)
 
+LIBQWAITCLIENT_LIBFLAGS = -lrt
+LIBQWAITCLIENT_CFLAGS =
 LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue
+
+QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
+QWAIT_CMD_CFLAGS = -Isrc
+QWAIT_CMD_OBJ = qwait-cmd
 
 
 # Build rules.
 
 .PHONY: all
-all: bin/libqwaitclient/test
+all: libqwaitclient qwait-cmd
+
+
+.PHONY: libqwaitclient
+libqwaitclient: bin/libqwaitclient.so bin/libqwaitclient/test
 
 obj/libqwaitclient/%.o: src/libqwaitclient/%.c src/libqwaitclient/*.h
 	@mkdir -p obj/libqwaitclient
-	$(CC) $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS) -fPIC -c $< -o $@
+	$(CC) $(C_FLAGS) $(LIBQWAITCLIENT_CFLAGS) $(PIC) -c $< -o $@
 
 bin/libqwaitclient/test: $(foreach O,$(LIBQWAITCLIENT_OBJ) test,obj/libqwaitclient/$(O).o)
 	@mkdir -p bin/libqwaitclient
-	$(CC) $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $^ -o $@
+	$(CC) $(LD_FLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $^ -o $@
+
+bin/libqwaitclient.so: $(foreach O,$(LIBQWAITCLIENT_OBJ),obj/libqwaitclient/$(O).o)
+	@mkdir -p bin/libqwaitclient
+	$(CC) $(LD_FLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $(SHARED) $(LDSO) $^ -o $@
+
+
+.PHONY: qwait-cmd
+qwait-cmd: bin/qwait-cmd
+
+obj/qwait-cmd/%.o: src/qwait-cmd/%.c # src/qwait-cmd/*.h
+	@mkdir -p obj/qwait-cmd
+	$(CC) $(C_FLAGS) $(QWAIT_CMD_CFLAGS) -c $< -o $@
+
+bin/qwait-cmd: $(foreach O,$(QWAIT_CMD_OBJ),obj/qwait-cmd/$(O).o) bin/libqwaitclient.so
+	@mkdir -p bin/libqwaitclient
+	$(CC) $(LD_FLAGS) $(QWAIT_CMD_LIBFLAGS) $^ -o $@
+
 
 # Clean rules.
 

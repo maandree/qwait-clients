@@ -20,9 +20,9 @@
 #include "macros.h"
 
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <setjmp.h>
 
 
 #define  _this_  libqwaitclient_qwait_queue_t* restrict this
@@ -161,7 +161,7 @@ int libqwaitclient_qwait_queue_compare_by_title(const void* a, const void* b)
 {
   const libqwaitclient_qwait_queue_t* a_ = a;
   const libqwaitclient_qwait_queue_t* b_ = b;
-  return strcmp(a_->title, b_->title);
+  return strcasecmp(a_->title, b_->title);
 }
 
 

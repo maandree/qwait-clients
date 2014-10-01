@@ -20,7 +20,6 @@
 #include "http-socket.h"
 #include "qwait-protocol.h"
 
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
