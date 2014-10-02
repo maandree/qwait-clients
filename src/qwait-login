@@ -94,7 +94,7 @@ cookie="$(echo "${cookie}" | sed -e 's/^.jsessionid=/JSESSIONID=/' -e 's/.$//')"
 page="$(curl ${CURL_FLAGS} -X POST -i -s -b "${cookie}" -d "${data}" -H "Origin: ${origin}/" "${origin}${action}")"
 
 # Verify success.
-if ! echo "${page}" | grep '^Set-Cookie: '; then
+if ! echo "${page}" | grep '^Set-Cookie: ' 2>/dev/null >/dev/null; then
     exit 1
 fi
 
