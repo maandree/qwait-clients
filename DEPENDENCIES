@@ -1,8 +1,8 @@
 glibc
 gcc
-sh (for login)
+sh (for login and logout)
 grep (for login)
-sed (for login)
+sed (for login and logout)
 coreutils (for login)
-curl (for login)
+curl (for login and logout)
 
