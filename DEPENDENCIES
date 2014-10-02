@@ -1,0 +1,8 @@
+glibc
+gcc
+sh (for login)
+grep (for login)
+sed (for login)
+coreutils (for login)
+curl (for login)
+
