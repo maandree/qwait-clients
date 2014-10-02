@@ -17,6 +17,7 @@
  */
 #include "globals.h"
 #include "queues.h"
+#include "queue.h"
 
 #include <libqwaitclient.h>
 
@@ -33,7 +34,8 @@ int main(int argc_, char** argv_)
   int rc = 0;
   size_t i, j, n;
   char* nonopts[5];
-  int list_queues = 0;
+  int action_list_queues = 0;
+  int action_print_queue = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -51,13 +53,15 @@ int main(int argc_, char** argv_)
       nonopts[j++] = argv[i];
     }
   
-#define argeq(a, b)   ((a < j) && !strcmp(nonopts[a], b))
-#define argeq1(A)     (argeq(0, A) && (j == 1))
-#define argeq2(A, B)  (argeq(0, A) && argeq(1, B) && (j == 2))
+#define argeq(a, b)      ((a < j) && !strcmp(nonopts[a], b))
+#define argeq1(A, c)     (argeq(0, A) && (c == j))
+#define argeq2(A, B, c)  (argeq(0, A) && argeq(1, B) && (c == j))
   
   /* Parse filterd command line arguments. */
-  if (argeq2("list", "queues") || argeq1("queues"))
-    list_queues = 1;
+  if (argeq2("list", "queues", 2) || argeq1("queues", 1))
+    action_list_queues = 1;
+  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))
+    action_print_queue = 1;
   else
     goto invalid_command;
   
@@ -69,7 +73,9 @@ int main(int argc_, char** argv_)
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
   
-  t (list_queues && print_queues(&sock));
+  /* Take action! */
+  t (action_list_queues && print_queues(&sock));
+  t (action_print_queue && print_queue(&sock, nonopts[2]));
   
   /* Aced it! */
  done:
