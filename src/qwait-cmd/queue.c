@@ -207,3 +207,39 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   return errno = saved_errno, errno ? -1 : 0;
 }
 
+
+/**
+ * Find the 0-based position in a queue for a student,
+ * that is, the number of students before that student
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user's ID
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int print_queue_position(libqwaitclient_http_socket_t* restrict sock,
+			 const char* restrict queue_name, const char* restrict user_id)
+{
+  libqwaitclient_qwait_queue_t queue;
+  size_t i, n;
+  int saved_errno, rc = 0;
+  
+  /* Acquire queue. */
+  if ((libqwaitclient_qwait_get_queue(sock, &queue, queue_name)) < 0)  goto fail;
+  
+  /* Find the student's position. */
+  for (i = 0, n = queue.position_count; i < n; i++)
+    if (!strcmp(queue.positions[i].user_id, user_id))
+      break;
+  
+  /* Print the position. */
+  if (i == n)  printf("Not found\n"), rc = 1;
+  else         printf("%zu\n", i);
+  
+  errno = 0;
+ fail:
+  saved_errno = errno;
+  libqwaitclient_qwait_queue_destroy(&queue);
+  return errno = saved_errno, errno ? -1 : rc;
+}
+

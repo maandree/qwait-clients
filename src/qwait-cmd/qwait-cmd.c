@@ -31,11 +31,12 @@
 int main(int argc_, char** argv_)
 {
   libqwaitclient_http_socket_t sock;
-  int rc = 0;
+  int r = 0, rc = 0;
   size_t i, j, n;
   char* nonopts[5];
   int action_list_queues = 0;
   int action_print_queue = 0;
+  int action_find_in_queue = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -58,10 +59,9 @@ int main(int argc_, char** argv_)
 #define argeq2(A, B, c)  (argeq(0, A) && argeq(1, B) && (c == j))
   
   /* Parse filterd command line arguments. */
-  if (argeq2("list", "queues", 2) || argeq1("queues", 1))
-    action_list_queues = 1;
-  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))
-    action_print_queue = 1;
+  if      (argeq2("list", "queues", 2) || argeq1("queues", 1))         action_list_queues = 1;
+  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))  action_print_queue = 1;
+  else if (argeq(0, "find") && argeq(2, "in") && (j == 4))             action_find_in_queue = 1;
   else
     goto invalid_command;
   
@@ -74,8 +74,11 @@ int main(int argc_, char** argv_)
   t (libqwaitclient_http_socket_connect(&sock));
   
   /* Take action! */
-  t (action_list_queues && print_queues(&sock));
-  t (action_print_queue && print_queue(&sock, nonopts[2]));
+  t (action_list_queues   && (r = print_queues(&sock), r < 0));
+  t (action_print_queue   && (r = print_queue(&sock, nonopts[2]), r < 0));
+  t (action_find_in_queue && (r = print_queue_position(&sock, nonopts[3], nonopts[1]), r < 0));
+  if (r >= 0)
+    rc = r;
   
   /* Aced it! */
  done:
@@ -87,13 +90,13 @@ int main(int argc_, char** argv_)
   /* I just don't know want when wrong! */
  fail:
   perror(*argv);
-  rc = 1;
+  rc = 2;
   goto done;
   
   /* The user did not specify a valid action. */
  invalid_command:
   fprintf(stderr, "What are you trying to do?\n");
-  return 2;
+  return 3;
 }
 
 
