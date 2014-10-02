@@ -33,6 +33,18 @@
 
 
 /**
+ * Three-letter month names
+ */
+static const char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+				"Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+/**
+ * Three-letter names of days of the week
+ */
+static const char* wdays[] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Say", "Sun" };
+
+
+/**
  * Initialises a queue entry
  * 
  * @param  this  The queue entry
@@ -166,9 +178,9 @@ void libqwaitclient_qwait_position_dump(const _this_, FILE* output)
   char* str_diff = NULL;
   
   if (!libqwaitclient_qwait_position_parse_time(this, &enter_time, 1))
-    str_time = libqwaitclient_qwait_position_string_time(&enter_time);
+    str_time = libqwaitclient_qwait_position_string_time(&enter_time, 0);
   if (!libqwaitclient_qwait_position_diff_time(this, &enter_diff, NULL))
-    str_diff = libqwaitclient_qwait_position_string_time(&enter_diff);
+    str_diff = libqwaitclient_qwait_position_string_time(&enter_diff, 0);
   
   fprintf(output, "\"%s\"(%s) @ %s: %s, entered %ji.%03i (%s; %s)\n",
 	  this->real_name, this->user_id, this->location, this->comment,
@@ -242,14 +254,14 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
   s -= 978307200L / (24L * 60L * 60L);
   time->year = 2001;
   
-  /* 2001-01-01 is an awesome epoch: simple fast year calculation */
+  /* 2001-01-01 is an awesome epoch: trivial day of the week calculation. */
+  time->wday = (unsigned)(s % 7);
+  
+  /* And simple fast year calculation. */
   time->year += (signed)(s / 146097) * 400, s %= 146097;
   time->year += (signed)(s /  36524) * 100, s %=  36524;
   time->year += (signed)(s /   1461) *   4, s %=   1461;
   time->year += (signed)(s /    365) *   1, s %=    365;
-  
-  /* And trivial day of the week calculation. */
-  time->wday = (unsigned)s % 7;
   
   /* If we are on a leapyear, February is one day longer. */
   is_leap = ((time->year % 4) == 0) && ((time->year % 100) != 0);
@@ -323,18 +335,16 @@ int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct t
 
 
 /**
- * Make a human-readable string of the time created by
+ * Make a coarse human-readable string of the time created by
  * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
  * 
- * @param   time  The time the entry was added to the queue or how long ago that was
- * @return        The time information as a free:able string, `NULL` on error
+ * @param   time      The time the entry was added to the queue or how long ago that was
+ * @return            The time information as a free:able string, `NULL` on error
  */
-char* libqwaitclient_qwait_position_string_time(const _time_)
+static char* libqwaitclient_qwait_position_coarse_string_time(const _time_)
 {
-  static const char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-				  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
   char* buf;
-  if (xmalloc(buf, 16 + 2 * 3 * sizeof(unsigned), char)) /* a bit excessive */
+  if (xmalloc(buf, 16 + 3 * sizeof(unsigned), char)) /* a bit excessive */
     return NULL;
   
   if (time->is_difference == 0)
@@ -362,6 +372,80 @@ char* libqwaitclient_qwait_position_string_time(const _time_)
     }
   
   return buf;
+}
+
+
+/**
+ * Make a detailed human-readable string of the time created by
+ * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
+ * 
+ * @param   time      The time the entry was added to the queue or how long ago that was
+ * @return            The time information as a free:able string, `NULL` on error
+ */
+static char* libqwaitclient_qwait_position_detailed_string_time(const _time_)
+{
+  char* buf;
+  if (xmalloc(buf, 60 + 3 * sizeof(unsigned), char)) /* a bit excessive */
+    return NULL;
+  
+  if (time->is_difference == 0)
+    {
+      sprintf(buf, "%i-(%02u)%s-%02u %02u:%02u:%02u.%03u %s (UTC%s%02u%02u), %s",
+	      time->year, time->month, months[time->month - 1], time->day,
+	      time->hour, time->min, time->sec, time->msec, time->timezone,
+	      time->sign < 0 ? "-" : "+", time->timezone_h, time->timezone_m,
+	      wdays[time->wday]);
+      return buf;
+    }
+  
+  if (time->sign == 0)
+    return sprintf(buf, "Now"), buf;
+  
+  *buf = 0;
+  
+  if (time->sign < 0)
+    sprintf(buf + strlen(buf), "In ");
+  
+  if (time->day == 1)  sprintf(buf + strlen(buf),  "1 day, ");
+  if (time->day >= 2)  sprintf(buf + strlen(buf), "%u days, ", time->day);
+  
+#define z(x)  (time->x == 0)
+#define o(x)  (time->x == 1)
+  
+  if (time->day || time->hour)
+    sprintf(buf,  "%u:%02u:%02u.%03u %s",
+	    time->hour, time->min, time->sec, time->msec,
+	    (o(hour) && z(min) && z(sec) && z(msec)) ? "hour" : "hours");
+  else if (time->min)
+    sprintf(buf,  "%u:%02u.%03u %s",
+	    time->min, time->sec, time->msec,
+	    (o(min) && z(sec) && z(msec)) ? "minute" : "minutes");
+  else
+    sprintf(buf,  "%u.%03u %s",
+	    time->sec, time->msec,
+	    (o(sec) && z(msec)) ? "second" : "seconds");
+  
+#undef z
+#undef o
+  
+  return buf;
+}
+
+
+/**
+ * Make a human-readable string of the time created by
+ * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
+ * 
+ * @param   time      The time the entry was added to the queue or how long ago that was
+ * @param   detailed  Whether to result should be detailed
+ * @return            The time information as a free:able string, `NULL` on error
+ */
+char* libqwaitclient_qwait_position_string_time(const _time_, int detailed)
+{
+  if (detailed)
+    return libqwaitclient_qwait_position_detailed_string_time(time);
+  else
+    return libqwaitclient_qwait_position_coarse_string_time(time);
 }
 
 

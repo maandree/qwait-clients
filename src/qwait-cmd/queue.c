@@ -89,18 +89,19 @@ static const char* get_location_colour(const char* location)
 /**
  * Print a position
  * 
- * @param   position       The position
- * @param   is_help        Whether the position is a request for help
- * @param   show_id        Whether to show the user ID
- * @param   show_time      Whether to show the entry time as a wall-clock time rather than difference
- * @param   max_real_name  The length of longest real name
- * @param   max_location   The length of longest location string
- * @param   max_comment    The length of longest comment
- * @param   now            The current time
- * @return                 Zero on succes, -1 on error
+ * @param   position            The position
+ * @param   is_help             Whether the position is a request for help
+ * @param   show_id             Whether to show the user ID
+ * @param   show_time           Whether to show the entry time as a wall-clock time rather than difference
+ * @param   show_detailed_time  Whether to display detailed time
+ * @param   max_real_name       The length of longest real name
+ * @param   max_location        The length of longest location string
+ * @param   max_comment         The length of longest comment
+ * @param   now                 The current time
+ * @return                      Zero on succes, -1 on error
  */
-static int print_position(libqwaitclient_qwait_position_t* restrict position,
-                          int is_help, int show_id, int show_time,
+static int print_position(libqwaitclient_qwait_position_t* restrict position, int is_help,
+                          int show_id, int show_time, int show_detailed_time,
                           size_t max_real_name, size_t max_location, size_t max_comment,
                           struct timespec* restrict now)
 {
@@ -113,7 +114,8 @@ static int print_position(libqwaitclient_qwait_position_t* restrict position,
   else            r = libqwaitclient_qwait_position_diff_time(position, &time, now);
   if (r < 0)
     return -1;
-  if (str_time = libqwaitclient_qwait_position_string_time(&time), str_time == NULL)
+  str_time = libqwaitclient_qwait_position_string_time(&time, show_detailed_time);
+  if (str_time == NULL)
     return -1;
   
 #define S(X)  position->X, (int)(max_##X - ustrlen(position->X)), ""
@@ -148,6 +150,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   size_t max_real_name = 0, max_location = 0, max_comment = 0;
   int show_id = 0;
   int show_time = 0;
+  int show_detailed_time = 0;
   int show_presentation = 1;
   int show_help = 1;
   
@@ -155,6 +158,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   for (i = 1, n = (size_t)argc; i < n; i++)
     if      (!strcmp(argv[i], "--id"))             show_id = 1;
     else if (!strcmp(argv[i], "--time"))           show_time = 1;
+    else if (!strcmp(argv[i], "--detailed-time"))  show_detailed_time = 1;
     else if (!strcmp(argv[i], "--help-only"))      show_presentation = 0;
     else if (!strcmp(argv[i], "--presentations"))  show_help = 0;
   
@@ -194,7 +198,8 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
       if (!show_help         &&  is_help)  continue;
       
       /* Print position. */
-      if (print_position(&position, is_help, show_id, show_time,
+      if (print_position(&position, is_help,
+			 show_id, show_time, show_detailed_time,
 			 max_real_name, max_location, max_comment,
 			 &now) < 0)
 	goto fail;
@@ -209,7 +214,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
 
 
 /**
- * Find the 0-based position in a queue for a student,
+ * Find and print the 0-based position in a queue for a student,
  * that is, the number of students before that student
  * 
  * @param   sock        A socket that is connected to the qwait server

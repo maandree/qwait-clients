@@ -31,9 +31,8 @@
  */
 int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name);
 
-
 /**
- * Find the 0-based position in a queue for a student,
+ * Find and print the 0-based position in a queue for a student,
  * that is, the number of students before that student
  * 
  * @param   sock        A socket that is connected to the qwait server
