@@ -15,41 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "globals.h"
-#include "queues.h"
+#ifndef QWAIT_CMD_QUEUES_H
+#define QWAIT_CMD_QUEUES_H
+
 
 #include <libqwaitclient.h>
 
-#include <stdio.h>
-#include <string.h>
+
+/**
+ * Print information about all queues (that have not been filtered)
+ * 
+ * @param   sock  A socket that is connected to the qwait server
+ * @return        Zero on success, -1 on error
+ */
+int print_queues(libqwaitclient_http_socket_t* restrict sock);
 
 
-#define  t(expression)   if (expression)  goto fail
-
-
-int main(int argc_, char** argv_)
-{
-  libqwaitclient_http_socket_t sock;
-  int rc = 0;
-  
-  argc = argc_;
-  argv = argv_;
-  
-  t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
-  t (libqwaitclient_http_socket_connect(&sock));
-  t (print_queues(&sock));
-  
- done:
-  libqwaitclient_http_socket_disconnect(&sock);
-  libqwaitclient_http_socket_destroy(&sock);
-  return rc;
-  
- fail:
-  perror(*argv);
-  rc = 1;
-  goto done;
-}
-
-
-#undef t
+#endif
 

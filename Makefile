@@ -60,7 +60,7 @@ LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol
 
 QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
-QWAIT_CMD_OBJ = qwait-cmd
+QWAIT_CMD_OBJ = qwait-cmd globals queues
 
 
 # Build rules.
@@ -88,7 +88,7 @@ bin/libqwaitclient.so: $(foreach O,$(LIBQWAITCLIENT_OBJ),obj/libqwaitclient/$(O)
 .PHONY: qwait-cmd
 qwait-cmd: bin/qwait-cmd
 
-obj/qwait-cmd/%.o: src/qwait-cmd/%.c # src/qwait-cmd/*.h
+obj/qwait-cmd/%.o: src/qwait-cmd/%.c src/qwait-cmd/*.h
 	@mkdir -p obj/qwait-cmd
 	$(CC) $(C_FLAGS) $(QWAIT_CMD_CFLAGS) -c $< -o $@
 
