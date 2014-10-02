@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <sys/time.h>
 
+#include <libqwaitclient/macros.h>
 
 
 /**
@@ -92,7 +93,8 @@ static const char* get_location_colour(const char* location)
  * @param   position            The position
  * @param   is_help             Whether the position is a request for help
  * @param   show_id             Whether to show the user ID
- * @param   show_time           Whether to show the entry time as a wall-clock time rather than difference
+ * @param   show_time           Whether to show the entry time as a wall-clock time
+ *                              rather than difference, 2 for Unix time
  * @param   show_detailed_time  Whether to display detailed time
  * @param   max_real_name       The length of longest real name
  * @param   max_location        The length of longest location string
@@ -110,13 +112,24 @@ static int print_position(libqwaitclient_qwait_position_t* restrict position, in
   int r;
   
   /* Get time string. */
-  if (show_time)  r = libqwaitclient_qwait_position_parse_time(position, &time, 1);
-  else            r = libqwaitclient_qwait_position_diff_time(position, &time, now);
-  if (r < 0)
-    return -1;
-  str_time = libqwaitclient_qwait_position_string_time(&time, show_detailed_time);
-  if (str_time == NULL)
-    return -1;
+  if (show_time != 2)
+    {
+      if (show_time)  r = libqwaitclient_qwait_position_parse_time(position, &time, 1);
+      else            r = libqwaitclient_qwait_position_diff_time(position, &time, now);
+      if (r < 0)
+	return -1;
+      str_time = libqwaitclient_qwait_position_string_time(&time, show_detailed_time);
+      if (str_time == NULL)
+	return -1;
+    }
+  else
+    {
+      if (xmalloc(str_time, 3 * sizeof(time_t) + 6, char))
+	return -1;
+      sprintf(str_time, "%ji.%03i",
+	      (intmax_t)(position->enter_time_seconds),
+	      position->enter_time_mseconds);
+    }
   
 #define S(X)  position->X, (int)(max_##X - ustrlen(position->X)), ""
   
@@ -158,6 +171,10 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   for (i = 1, n = (size_t)argc; i < n; i++)
     if      (!strcmp(argv[i], "--id"))             show_id = 1;
     else if (!strcmp(argv[i], "--time"))           show_time = 1;
+    else if (!strcmp(argv[i], "--unix"))           show_time = 2;
+    else if (!strcmp(argv[i], "--posix"))          show_time = 2;
+    else if (!strcmp(argv[i], "--unix-time"))      show_time = 2;
+    else if (!strcmp(argv[i], "--posix-time"))     show_time = 2;
     else if (!strcmp(argv[i], "--detailed-time"))  show_detailed_time = 1;
     else if (!strcmp(argv[i], "--help-only"))      show_presentation = 0;
     else if (!strcmp(argv[i], "--presentations"))  show_help = 0;
