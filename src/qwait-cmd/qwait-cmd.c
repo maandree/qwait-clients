@@ -28,6 +28,13 @@
 #define  t(expression)   if (expression)  goto fail
 
 
+/**
+ * Command line client for qwait
+ * 
+ * @param   argc_  The number of elements in `argv_`
+ * @param   argv_  Command line arguments, including the command name
+ * @return         Zero on and only on success
+ */
 int main(int argc_, char** argv_)
 {
   libqwaitclient_http_socket_t sock;
