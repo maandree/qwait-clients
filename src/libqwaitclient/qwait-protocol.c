@@ -25,8 +25,8 @@
 #include <stdio.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t*  restrict sock
-#define _queue_  libqwaitclient_qwait_queue_t*  restrict queue
+#define _sock_   libqwaitclient_http_socket_t* restrict sock
+#define _queue_  libqwaitclient_qwait_queue_t* restrict queue
 
 
 #define  t(expression)   if (expression)  goto fail
