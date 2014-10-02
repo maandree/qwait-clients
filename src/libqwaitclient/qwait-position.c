@@ -174,6 +174,9 @@ void libqwaitclient_qwait_position_dump(const _this_, FILE* output)
 	  this->real_name, this->user_id, this->location, this->comment,
 	  (intmax_t)(this->enter_time_seconds), this->enter_time_mseconds,
 	  str_time, str_diff);
+  
+  free(str_time);
+  free(str_diff);
 }
 
 
