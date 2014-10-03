@@ -99,6 +99,8 @@ int main(int argc_, char** argv_)
     {
       ta (action_log_in,  authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
       ta (action_log_out, authenticate, NULL);
+      if (r >= 0)
+	rc = r;
       goto done;
     }
   
