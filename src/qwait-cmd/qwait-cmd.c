@@ -86,14 +86,14 @@ int main(int argc_, char** argv_)
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
   
-#define ta(cond, expr)  t ((cond) && (r = (expr), r < 0))
+#define ta(cond, fun, ...)  t ((cond) && (r = fun(__VA_ARGS__), r < 0))
   
   /* Take action! */
-  ta (action_list_queues,              print_queues(&sock));
-  ta (action_print_queue,               print_queue(&sock, nonopts[2]));
-  ta (action_find_in_queue,    print_queue_position(&sock, nonopts[3], nonopts[1]));
-  ta (action_list_owned,         print_owned_queues(&sock, nonopts[4]));
-  ta (action_list_moderated, print_moderated_queues(&sock, nonopts[4]));
+  ta (action_list_queues,    print_queues,           &sock);
+  ta (action_print_queue,    print_queue,            &sock, nonopts[2]);
+  ta (action_find_in_queue,  print_queue_position,   &sock, nonopts[3], nonopts[1]);
+  ta (action_list_owned,     print_owned_queues,     &sock, nonopts[4]);
+  ta (action_list_moderated, print_moderated_queues, &sock, nonopts[4]);
   if (r >= 0)
     rc = r;
   
