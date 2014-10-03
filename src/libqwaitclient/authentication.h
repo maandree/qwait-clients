@@ -19,6 +19,8 @@
 #define LIBQWAITCLIENT_AUTHENTICATION_H
 
 
+#include "http-message.h"
+
 #define _GNU_SOURCE
 #include <stddef.h>
 
@@ -43,6 +45,17 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
  * @return               Zero on possible success, -1 on definite error
  */
 int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length);
+
+/**
+ * Add authentication tokens to a message
+ * 
+ * @param   mesg         The message to which to add authentication
+ * @param   data         The authentication data
+ * @param   data_length  The length of `data`
+ * @return               Zero on possible success, -1 on definite error
+ */
+int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
+			     const char* restrict data, size_t data_length);
 
 
 #endif

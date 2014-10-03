@@ -19,6 +19,9 @@
 #define QWAIT_CMD_AUTHENTICATION_H
 
 
+#include <libqwaitclient.h>
+
+
 /**
  * Log in or log out
  * 
@@ -27,6 +30,14 @@
  * @return            Zero on success, -1 on error, 1 if authentication failed
  */
 int authenticate(const char* restrict username);
+
+/**
+ * Authenticate message
+ * 
+ * @param   mesg  The message to which to add authentication
+ * @return        Zero on success, -1 on error
+ */
+int authenticate_mesage(libqwaitclient_http_message_t* restrict mesg);
 
 
 #endif

@@ -304,3 +304,50 @@ int authenticate(const char* restrict username)
   return errno = saved_errno, -1;
 }
 
+
+
+/**
+ * Authenticate message
+ * 
+ * @param   mesg  The message to which to add authentication
+ * @return        Zero on success, -1 on error
+ */
+int authenticate_mesage(libqwaitclient_http_message_t* restrict mesg)
+{
+  struct stat attr;
+  void* address;
+  size_t len;
+  int fd, r, saved_errno;
+  char* pathname;
+  
+  if (pathname = get_auth_file(), pathname == NULL)
+    return -1;
+  
+  /* Stat auth file for its size. */
+  if (stat(pathname, &attr) < 0)
+    return -1;
+  len = (size_t)(attr.st_size);
+  
+  /* Open auth file. */
+  if (fd = open(pathname, O_RDONLY | O_CLOEXEC), fd < 0)
+    return -1;
+  
+  /* Memory map auth file. */
+  address = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
+  if ((address == MAP_FAILED) || (address == NULL))
+    {
+      close(fd);
+      return -1;
+    }
+  
+  /* Add authentication. */
+  r = libqwaitclient_auth_sign(mesg, address, len);
+  saved_errno = errno;
+  
+  /* Release resources. */
+  close(fd);
+  /* Do not free `address`. */
+  
+  return errno = saved_errno, r;
+}
+

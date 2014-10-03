@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <string.h>
 
 
 
@@ -212,5 +213,45 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
   if (pipe_rw[1] >= 0)  close(pipe_rw[1]);
   if (pid > 0)          kill(pid, SIGTERM);
   return errno = saved_errno, -1;
+}
+
+
+/**
+ * Add authentication tokens to a message
+ * 
+ * @param   mesg         The message to which to add authentication
+ * @param   data         The authentication data
+ * @param   data_length  The length of `data`
+ * @return               Zero on possible success, -1 on definite error
+ */
+int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
+			     const char* restrict data, size_t data_length)
+{
+  size_t i, cookie_count = 0, p;
+  
+  for (i = 0; i < data_length; i++)
+    if (data[i] == '\n')
+      cookie_count++;
+  
+  if (libqwaitclient_http_message_extend_headers(mesg, cookie_count) < 0)
+    return -1;
+  
+  for (i = 0, p = 0; i < cookie_count; i++)
+    {
+      char* end = memchr(data + p, '\n', data_length - p);
+      size_t len = (size_t)(end - data);
+      char* restrict buf;
+      
+      if (xmalloc(buf, len + 1, char))
+	return -1;
+      memcpy(buf, data + p, len * sizeof(char));
+      buf[len] = '\0';
+      
+      mesg->headers[mesg->header_count++] = buf;
+      
+      p += len + 1;
+    }
+  
+  return 0;
 }
 
