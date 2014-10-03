@@ -51,7 +51,7 @@ int main(int argc_, char** argv_)
   argc = argc_;
   argv = argv_;
   
-  /* Get arguments that these function cares about. */
+  /* Get arguments that this function cares about. */
   for (i = 1, j = 0, n = (size_t)argc; i < n; i++)
     {
       if (argv[i][0] == '-')
