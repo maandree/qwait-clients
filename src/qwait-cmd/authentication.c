@@ -195,7 +195,7 @@ static void log_out(const char* restrict pathname)
   
   /* Release resources. */
   close(fd);
-  /* Do not free `address`. */
+  munmap(address, len);
 }
 
 
@@ -346,7 +346,7 @@ int authenticate_message(libqwaitclient_http_message_t* restrict mesg)
   
   /* Release resources. */
   close(fd);
-  /* Do not free `address`. */
+  munmap(address, len);
   
   return errno = saved_errno, r;
 }
