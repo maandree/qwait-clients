@@ -70,7 +70,7 @@ int main(int argc_, char** argv_)
 #define argeq(a, b)            (!strcmp(nonopts[a], b))
 #define argeq1(A, c)           ((c == j) && argeq(0, A))
 #define argeq2(A, B, c)        ((c == j) && argeq(0, A) && argeq(1, B))
-#define argeq3(A, B, C, c)     ((c == j) && argeq(0, A) && argeq(1, B) && argeq(1, C))
+#define argeq3(A, B, C, c)     ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C))
 #define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
   
   /* Parse filtered command line arguments. */
