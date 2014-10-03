@@ -63,15 +63,15 @@ int main(int argc_, char** argv_)
       nonopts[j++] = argv[i];
     }
   
-#define argeq(a, b)            ((a < j) && !strcmp(nonopts[a], b))
-#define argeq1(A, c)           (argeq(0, A) && (c == j))
-#define argeq2(A, B, c)        (argeq(0, A) && argeq(1, B) && (c == j))
-#define argeq4(A, B, C, D, c)  (argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D) && (c == j))
+#define argeq(a, b)            (!strcmp(nonopts[a], b))
+#define argeq1(A, c)           ((c == j) && argeq(0, A))
+#define argeq2(A, B, c)        ((c == j) && argeq(0, A) && argeq(1, B))
+#define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
   
   /* Parse filterd command line arguments. */
   if      (argeq2("list", "queues", 2) || argeq1("queues", 1))         action_list_queues = 1;
   else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))  action_print_queue = 1;
-  else if (argeq(0, "find") && argeq(2, "in") && (j == 4))             action_find_in_queue = 1;
+  else if ((j == 4) && argeq(0, "find") && argeq(2, "in"))             action_find_in_queue = 1;
   else if (argeq4("list", "queues", "owned", "by", 5))                 action_list_owned = 1;
   else if (argeq4("list", "queues", "moderated", "by", 5))             action_list_moderated = 1;
   else
