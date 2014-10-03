@@ -29,7 +29,64 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <termios.h>
 
+#ifdef USE_LIBPASSPHRASE
+# include <passphrase.h>
+#endif
+
+
+
+/**
+ * Reads the password from stdin
+ * 
+ * @return  The password, `NULL` on error
+ */
+static char* read_password(void)
+{
+#ifdef USE_LIBPASSPHRASE
+  
+  char* password;
+  int saved_errno;
+  passphrase_disable_echo();
+  password = passphrase_read();
+  saved_errno = errno;
+  passphrase_reenable_echo();
+  return errno = saved_errno, password;
+  
+#else
+  
+  struct termios stty, saved_stty;
+  char* password = NULL;
+  int saved_errno = 0;
+  ssize_t length_;
+  size_t i, j, length;
+  
+  /* Disable echo. */
+  tcgetattr(STDIN_FILENO, &stty);
+  saved_stty = stty;
+  stty.c_lflag &= (tcflag_t)~ECHO;
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &stty);
+  
+  /* Read password. */
+  length_ = getline(&password, 0, stdin);
+  if (length_ < 0)
+    saved_errno = errno, free(password), password = NULL;
+  length = (size_t)length_;
+  
+  /* Remove NUL-bytes, as they can be caused by kernel errors. */
+  for (i = j = 0; i < length; i++)
+    if (password[i])
+      password[j++] = password[i];
+  password[j] = '\0';
+  
+  /* Reenable echo. */
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_stty);
+  
+  return errno = saved_errno, password;
+  
+#endif
+}
 
 
 /**
@@ -139,6 +196,67 @@ static void log_out(const char* restrict pathname)
 
 
 /**
+ * Perform a login
+ * 
+ * @param   pathname  The pathname of the file for the login data
+ * @param   username  The user's username
+ * @return            Zero on success, -1 on error, 1 if authentication failed
+ */
+static int log_in(const char* restrict pathname, const char* restrict username)
+{
+  char* data = NULL;
+  char* restrict password = NULL;
+  size_t data_length, written = 0;
+  int rc, saved_errno, fd = -1;
+  ssize_t wrote;
+  
+  /* Get password. */
+  fprintf(stdout, "[%s] password: ", username);
+  fflush(stdout);
+  password = read_password();
+  if (password == NULL)
+    goto fail;
+  
+  /* Log in. */
+  rc = libqwaitclient_auth_log_in(username, password, &data, &data_length);
+  saved_errno = errno;
+  
+  /* Save authentication data. */
+  if (rc == 0)
+    {
+      if (fd = open(pathname, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR), fd < 0)
+	goto fail;
+      while (written < data_length)
+	{
+	  wrote = write(fd, data + written, data_length - written);
+	  if (wrote < 0)
+	    {
+	      if (errno == EINTR)
+		continue;
+	      goto fail;
+	    }
+	  written += (size_t)wrote;
+	}
+      close(fd);
+    }
+  
+ done:
+#ifdef USE_LIBPASSPHRASE
+  passphrase_wipe(password, strlen(password));
+#endif
+  free(password);
+  free(data);
+  return errno = saved_errno, rc;
+  
+ fail:
+  saved_errno = errno;
+  if (fd >= 0)
+    close(fd), fd = -1, unlink(pathname);
+  goto done;
+}
+
+
+/**
  * Log in or log out
  * 
  * @param   username  Your username, `NULL` to log out, an empty string can be
@@ -148,7 +266,7 @@ static void log_out(const char* restrict pathname)
 int authenticate(const char* restrict username)
 {
   char* pathname = NULL;
-  int saved_errno;
+  int saved_errno, rc = 0;
   
   /* Get use name if "" is used. */
   if (username && (*username == '\0'))
@@ -161,13 +279,20 @@ int authenticate(const char* restrict username)
   
   /* Log out, if requested. */
   if (username == NULL)
-    if (log_out(pathname), unlink(pathname) < 0)
-      goto fail;
+    {
+      if (log_out(pathname), unlink(pathname) < 0)
+	goto fail;
+      goto done;
+    }
   
-  /* TODO login */
+  /* Log in, if reqested. */
+  rc = log_in(pathname, username);
+  if (rc < 0)
+    goto fail;
   
+ done:
   free(pathname);
-  return 0;
+  return rc;
   
  fail:
   saved_errno = errno;

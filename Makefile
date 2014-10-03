@@ -62,6 +62,11 @@ QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
 QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication
 
+ifeq ($(USE_LIBPASSPHRASE),y)
+QWAIT_CMD_LIBFLAGS += -lpassphrase
+C_FLAGS += -DUSE_LIBPASSPHRASE
+endif
+
 
 # Build rules.
 

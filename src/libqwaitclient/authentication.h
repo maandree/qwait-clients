@@ -24,6 +24,18 @@
 
 
 /**
+ * Perform a login
+ * 
+ * @param   username     The user's username
+ * @param   password     The user's password
+ * @param   data         Output parameter for authentication data, free even on failure
+ * @param   data_length  Output parameter for the length of `*data`
+ * @return               Zero on success, -1 on error, 1 if login failed
+ */
+int libqwaitclient_auth_log_in(const char* restrict username, const char* restrict password,
+			       char** restrict data, size_t* restrict data_length);
+
+/**
  * Request a server-side logout
  * 
  * @param   data         The authentication data

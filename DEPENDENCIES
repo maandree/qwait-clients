@@ -5,4 +5,5 @@ grep (for login)
 sed (for login and logout)
 coreutils (for login)
 curl (for login and logout)
+libpassphrase (optional)
 
