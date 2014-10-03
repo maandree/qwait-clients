@@ -19,8 +19,9 @@
 #define LIBQWAITCLIENT_QWAIT_PROTOCOL_H
 
 
-#include "qwait-queue.h"
 #include "http-socket.h"
+#include "qwait-queue.h"
+#include "qwait-user.h"
 
 #define _GNU_SOURCE
 #include <stddef.h>
@@ -28,6 +29,7 @@
 
 #define _sock_   libqwaitclient_http_socket_t* restrict sock
 #define _queue_  libqwaitclient_qwait_queue_t* restrict queue
+#define _user_   libqwaitclient_qwait_user_t*  restrict user
 
 
 /**
@@ -49,7 +51,18 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
  */
 int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_name);
 
+/**
+ * Get complete information about a user
+ * 
+ * @param   sock     The socket used to remote communication
+ * @param   user     Output parameter for the user information
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id);
 
+
+#undef _user_
 #undef _queue_
 #undef _sock_
 

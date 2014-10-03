@@ -27,6 +27,7 @@
 
 #define _sock_   libqwaitclient_http_socket_t* restrict sock
 #define _queue_  libqwaitclient_qwait_queue_t* restrict queue
+#define _user_   libqwaitclient_qwait_user_t*  restrict user
 
 
 #define  t(expression)   if (expression)  goto fail
@@ -105,6 +106,7 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   int saved_errno;
   
   memset(&json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_qwait_queue_initialise(queue);
   
   libqwaitclient_http_message_zero_initialise(&mesg);
   t (libqwaitclient_http_message_extend_headers(&mesg, mesg.header_count = 1) < 0);
@@ -116,8 +118,57 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   t (libqwaitclient_http_socket_send(sock, &mesg));
   t (libqwaitclient_http_socket_receive(sock));
   t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
-  libqwaitclient_qwait_queue_initialise(queue);
   t (libqwaitclient_qwait_queue_parse(queue, &json));
+  
+  libqwaitclient_json_destroy(&json);
+  libqwaitclient_http_message_destroy(&mesg);
+  return 0;
+  
+ fail:
+  saved_errno = errno;
+#ifdef DEBUG
+  fprintf(stderr, "=============================================\n");
+  fprintf(stderr, "RECIEVED MESSAGE:\n");
+  fprintf(stderr, "---------------------------------------------\n");
+  libqwaitclient_json_dump(&json, stderr);
+  fprintf(stderr, "=============================================\n");
+#endif
+  libqwaitclient_json_destroy(&json);
+  libqwaitclient_http_message_destroy(&mesg);
+  if (saved_errno == EINVAL)
+    saved_errno = EBADMSG;
+  return errno = saved_errno, -1;
+}
+
+
+/**
+ * Get complete information about a user
+ * 
+ * @param   sock     The socket used to remote communication
+ * @param   user     Output parameter for the user information
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
+{
+  libqwaitclient_http_message_t mesg;
+  libqwaitclient_json_t json;
+  int saved_errno;
+  
+  memset(&json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_qwait_user_initialise(user);
+  
+  libqwaitclient_http_message_zero_initialise(&mesg);
+  t (libqwaitclient_http_message_extend_headers(&mesg, mesg.header_count = 1) < 0);
+  t (xmalloc(mesg.headers[0], strlen("Host: %s") + strlen(sock->host), char));
+  sprintf(mesg.headers[0], "Host: %s", sock->host);
+  t (xmalloc(mesg.top, strlen("GET /api/user/%s HTTP/1.1") + strlen(user_id), char));
+  sprintf(mesg.top, "GET /api/user/%s HTTP/1.1", user_id);
+  
+  t (libqwaitclient_http_socket_send(sock, &mesg));
+  t (libqwaitclient_http_socket_receive(sock));
+  t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
+  t (libqwaitclient_qwait_user_parse(user, &json));
   
   libqwaitclient_json_destroy(&json);
   libqwaitclient_http_message_destroy(&mesg);
@@ -143,6 +194,7 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
 #undef t
 
 
+#undef _user_
 #undef _queue_
 #undef _sock_
 

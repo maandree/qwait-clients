@@ -15,18 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENT_H
-#define LIBQWAITCLIENT_H
+#ifndef QWAIT_CMD_USER_H
+#define QWAIT_CMD_USER_H
 
 
-#include "libqwaitclient/config.h"
-#include "libqwaitclient/http-message.h"
-#include "libqwaitclient/http-socket.h"
-#include "libqwaitclient/qwait-position.h"
-#include "libqwaitclient/qwait-protocol.h"
-#include "libqwaitclient/qwait-queue.h"
-#include "libqwaitclient/authentication.h"
-#include "libqwaitclient/qwait-user.h"
+#include <libqwaitclient.h>
+
+
+/**
+ * Print information about a user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The Id of the user
+ * @return           Zero on success, -1 on error
+ */
+int print_user_information(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id);
 
 
 #endif

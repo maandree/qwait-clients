@@ -19,6 +19,7 @@
 #include "queues.h"
 #include "queue.h"
 #include "authentication.h"
+#include "user.h"
 
 #include <libqwaitclient.h>
 
@@ -50,6 +51,7 @@ int main(int argc_, char** argv_)
   int action_list_moderated = 0;
   int action_log_in = 0;
   int action_log_out = 0;
+  int action_stat_user = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -72,6 +74,7 @@ int main(int argc_, char** argv_)
 #define argeq2(A, B, c)        ((c == j) && argeq(0, A) && argeq(1, B))
 #define argeq3(A, B, C, c)     ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C))
 #define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
+#define is_user_id(i)         (strstr(nonopts[i], "u1") == nonopts[i])
   
   /* Parse filtered command line arguments. */
   if      (argeq2("list", "queues", 2) || argeq1("queues", 1))         action_list_queues = 1;
@@ -83,9 +86,12 @@ int main(int argc_, char** argv_)
   else if (argeq2("login", "as", 3))                                   action_log_in = 2;
   else if (argeq2("log", "in", 2) || argeq1("login", 1))               action_log_in = -1;
   else if (argeq2("log", "out", 2) || argeq1("logout", 1))             action_log_out = 1;
+  else if (argeq2("stat", "user", 3))                                  action_stat_user = 2;
+  else if (argeq1("stat", 2) && is_user_id(1))                         action_stat_user = 1;
   else
     goto invalid_command;
   
+#undef is_user_id
 #undef argeq4
 #undef argeq3
 #undef argeq2
@@ -115,6 +121,7 @@ int main(int argc_, char** argv_)
   ta (action_find_in_queue,  print_queue_position,   &sock, nonopts[3], nonopts[1]);
   ta (action_list_owned,     print_owned_queues,     &sock, nonopts[4]);
   ta (action_list_moderated, print_moderated_queues, &sock, nonopts[4]);
+  ta (action_stat_user,      print_user_information, &sock, nonopts[action_stat_user]);
   if (r >= 0)
     rc = r;
   

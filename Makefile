@@ -56,11 +56,12 @@ LD_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS)
 
 LIBQWAITCLIENT_LIBFLAGS = -lrt
 LIBQWAITCLIENT_CFLAGS =
-LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue authentication
+LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue authentication  \
+                     qwait-user
 
 QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
-QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication
+QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication user
 
 ifeq ($(USE_LIBPASSPHRASE),y)
 QWAIT_CMD_LIBFLAGS += -lpassphrase

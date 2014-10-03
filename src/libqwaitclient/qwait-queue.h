@@ -27,7 +27,7 @@
 
 
 /**
- * A queue for a class
+ * A queue for a course
  */
 typedef struct libqwaitclient_qwait_queue
 {
