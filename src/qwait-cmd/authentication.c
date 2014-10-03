@@ -351,3 +351,31 @@ int authenticate_message(libqwaitclient_http_message_t* restrict mesg)
   return errno = saved_errno, r;
 }
 
+
+/**
+ * Print the user's ID
+ * 
+ * @return  Zero on success, -1 on error
+ */
+int print_user_id(void)
+{
+  char* user_id = NULL;
+  int r = libqwaitclient_auth_user_id(&user_id);
+  
+  if (r == 0)
+    {
+      int saved_errno;
+      errno = 0;
+      r = printf("%s\n", user_id);
+      saved_errno = errno;
+      free(user_id);
+      errno = saved_errno;
+      return r;
+    }
+  else if (r == 1)  fprintf(stderr, "You do not exist.\n");
+  else if (r == 2)  fprintf(stderr, "You are homeless.\n");
+  else if (r == 3)  fprintf(stderr, "Cannot determine.\n");
+  
+  return errno = (r > 0 ? 0 : errno), (r == 3 ? 1 : -1);
+}
+

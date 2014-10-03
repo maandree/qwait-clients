@@ -52,6 +52,7 @@ int main(int argc_, char** argv_)
   int action_log_in = 0;
   int action_log_out = 0;
   int action_stat_user = 0;
+  int action_who_am_i = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -77,17 +78,18 @@ int main(int argc_, char** argv_)
 #define is_user_id(i)         (strstr(nonopts[i], "u1") == nonopts[i])
   
   /* Parse filtered command line arguments. */
-  if      (argeq2("list", "queues", 2) || argeq1("queues", 1))         action_list_queues = 1;
-  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))  action_print_queue = 1;
-  else if ((j == 4) && argeq(0, "find") && argeq(2, "in"))             action_find_in_queue = 1;
-  else if (argeq4("list", "queues", "owned", "by", 5))                 action_list_owned = 1;
-  else if (argeq4("list", "queues", "moderated", "by", 5))             action_list_moderated = 1;
-  else if (argeq3("log", "in", "as", 4))                               action_log_in = 3;
-  else if (argeq2("login", "as", 3))                                   action_log_in = 2;
-  else if (argeq2("log", "in", 2) || argeq1("login", 1))               action_log_in = -1;
-  else if (argeq2("log", "out", 2) || argeq1("logout", 1))             action_log_out = 1;
-  else if (argeq2("stat", "user", 3))                                  action_stat_user = 2;
-  else if (argeq1("stat", 2) && is_user_id(1))                         action_stat_user = 1;
+  if      (argeq2("list", "queues", 2) || argeq1("queues", 1))          action_list_queues = 1;
+  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))   action_print_queue = 1;
+  else if ((j == 4) && argeq(0, "find") && argeq(2, "in"))              action_find_in_queue = 1;
+  else if (argeq4("list", "queues", "owned", "by", 5))                  action_list_owned = 1;
+  else if (argeq4("list", "queues", "moderated", "by", 5))              action_list_moderated = 1;
+  else if (argeq3("log", "in", "as", 4))                                action_log_in = 3;
+  else if (argeq2("login", "as", 3))                                    action_log_in = 2;
+  else if (argeq2("log", "in", 2) || argeq1("login", 1))                action_log_in = -1;
+  else if (argeq2("log", "out", 2) || argeq1("logout", 1))              action_log_out = 1;
+  else if (argeq2("stat", "user", 3))                                   action_stat_user = 2;
+  else if (argeq1("stat", 2) && is_user_id(1))                          action_stat_user = 1;
+  else if (argeq3("who", "am", "I", 3) || argeq3("who", "am", "i", 3))  action_who_am_i = 1;
   else
     goto invalid_command;
   
@@ -101,10 +103,11 @@ int main(int argc_, char** argv_)
 #define ta(cond, fun, ...)  t ((cond) && (r = fun(__VA_ARGS__), r < 0))
   
   /* Special commands that do not require a connection to the QWait server. */
-  if (action_log_in || action_log_out)
+  if (action_log_in || action_log_out || action_who_am_i)
     {
-      ta (action_log_in,  authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
-      ta (action_log_out, authenticate, NULL);
+      ta (action_log_in,   authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
+      ta (action_log_out,  authenticate, NULL);
+      t  (action_who_am_i && (r = print_user_id(), r < 0));
       if (r >= 0)
 	rc = r;
       goto done;

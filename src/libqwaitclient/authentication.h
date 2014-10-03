@@ -57,6 +57,17 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length);
 int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
 			     const char* restrict data, size_t data_length);
 
+/**
+ * Get the user's ID
+ * 
+ * @param   user_id  Output parameter for the user ID
+ * @return           Zero on success, -1 on error, 1 if the user does not
+ *                   have a passwd entry, 2 if the user does not have a
+ *                   home directory in the passwd entry, 3 if the user
+ *                   is not using a university computer
+ */
+int libqwaitclient_auth_user_id(char** restrict user_id);
+
 
 #endif
 

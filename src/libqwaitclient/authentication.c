@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <pwd.h>
 
 
 
@@ -253,5 +254,60 @@ int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
     }
   
   return 0;
+}
+
+
+/**
+ * Get the user's ID
+ * 
+ * @param   user_id  Output parameter for the user ID
+ * @return           Zero on success, -1 on error, 1 if the user does not
+ *                   have a passwd entry, 2 if the user does not have a
+ *                   home directory in the passwd entry, 3 if the user
+ *                   is not using a university computer
+ */
+int libqwaitclient_auth_user_id(char** restrict user_id)
+{
+  struct passwd* userdata;
+  const char* home = NULL;
+  size_t n;
+  char* rc;
+  char* p;
+  
+  /* Get user information. */
+  errno = 0;
+  userdata = getpwuid(getuid());
+  if (userdata == NULL)
+    {
+      if (errno == 0)
+	fprintf(stderr, "You do not exist.\n"), errno = 0;
+      return 1;
+    }
+  
+  /* Get the user's home directory. */
+  home = userdata->pw_dir;
+  if (home == NULL)
+    return 2;
+  
+  /* Get the user's ID by the basename if her home directory. */
+  if (rc = strdup(userdata->pw_dir), rc == NULL)
+    return -1;
+  n = strlen(rc);
+  for (;;)
+    if (n == 0)
+      return free(rc), 3;
+    else if (rc[n - 1] == '/')
+      rc[n - 1] = '\0';
+    else
+      break;
+  p = strrchr(rc, '/');
+  if (p == NULL)
+    return free(rc), 3;
+  p++;
+  memmove(rc, p, (strlen(p) + 1) * sizeof(char));
+  if (strstr(rc, "u1") != rc)
+    return free(rc), 3;
+  
+  return *user_id = rc, 0;
 }
 

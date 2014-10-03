@@ -39,6 +39,13 @@ int authenticate(const char* restrict username);
  */
 int authenticate_message(libqwaitclient_http_message_t* restrict mesg);
 
+/**
+ * Print the user's ID
+ * 
+ * @return  Zero on success, -1 on error
+ */
+int print_user_id(void);
+
 
 #endif
 
