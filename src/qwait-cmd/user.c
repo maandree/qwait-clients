@@ -117,7 +117,7 @@ int print_user_information(libqwaitclient_http_socket_t* restrict sock, const ch
 	     user.queues[i], max_queue    - strlen(user.queues[i]), "",
 	     pos.location,   max_location - strlen(pos.location),   "",
 	     pos.comment,    max_comment  - strlen(pos.comment),    "",
-	     str_time); /* TODO print position in queue  */
+	     str_time);
     }
   
  done:
