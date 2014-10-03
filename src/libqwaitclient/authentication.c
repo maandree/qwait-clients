@@ -48,7 +48,7 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
   if (pid = fork(), pid == -1)  goto fail;
   
   /* Select procedure. */
-  if (pid > 0)
+  if (pid)
     goto parent;
   
   
