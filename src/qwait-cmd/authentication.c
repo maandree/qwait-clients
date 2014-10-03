@@ -289,7 +289,7 @@ int authenticate(const char* restrict username)
       goto done;
     }
   
-  /* Log in, if reqested. */
+  /* Log in, if requested. */
   rc = log_in(pathname, username);
   if (rc < 0)
     goto fail;
