@@ -86,7 +86,7 @@ int main(int argc_, char** argv_)
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
   
-#define ta(cond, expr)  t((cond) && (r = (expr), r < 0));
+#define ta(cond, expr)  t ((cond) && (r = (expr), r < 0))
   
   /* Take action! */
   ta (action_list_queues,              print_queues(&sock));
