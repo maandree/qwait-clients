@@ -159,7 +159,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   libqwaitclient_qwait_queue_t queue;
   struct timespec now;
   int saved_errno;
-  size_t i, n;
+  size_t i, j, k, n, m;
   size_t max_real_name = 0, max_location = 0, max_comment = 0;
   int show_id = 0;
   int show_time = 0;
@@ -202,13 +202,21 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   /* Print the queue. (It is already sorted.) */
   for (i = 0, n = queue.position_count; i < n; i++)
     {
+      char comment_[7];
       libqwaitclient_qwait_position_t position = queue.positions[i];
-      int is_help;
+      int is_help = 0;
       
       /* Is this a request for help. */
-      is_help  = strcasestr(position.comment, "hjälp") != NULL;
-      is_help |= strcasestr(position.comment, "hjÄlp") != NULL;
-      is_help |= strcasestr(position.comment, "help")  != NULL;
+      m = strlen(position.comment);
+      for (j = k = 0; (k < 6) && (j < m); j++)
+	if ((k == 0) || (comment_[k - 1] != position.comment[j]))
+	  comment_[k++] = position.comment[j];
+      if (j < m)
+	comment_[k++] = 'x';
+      comment_[k] = '\0';
+      is_help  = strcasestr(comment_, "hjälp") != NULL;
+      is_help |= strcasestr(comment_, "hjÄlp") != NULL;
+      is_help |= strcasestr(comment_, "help")  != NULL;
       
       /* Filter queue. */
       if (!show_presentation && !is_help)  continue;
