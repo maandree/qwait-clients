@@ -312,7 +312,7 @@ int authenticate(const char* restrict username)
  * @param   mesg  The message to which to add authentication
  * @return        Zero on success, -1 on error
  */
-int authenticate_mesage(libqwaitclient_http_message_t* restrict mesg)
+int authenticate_message(libqwaitclient_http_message_t* restrict mesg)
 {
   struct stat attr;
   void* address;
