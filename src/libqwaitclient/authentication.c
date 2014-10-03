@@ -38,7 +38,7 @@
 int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
 {
   int pipe_rw[2] = { -1, -1 };
-  pid_t pid = -1, reaped = -2;
+  pid_t pid = -1, reaped = -1;
   int saved_errno, status;
   ssize_t wrote;
   size_t written;
@@ -52,7 +52,8 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
     goto parent;
   
   
-  /* Child process. */
+  /* CHILD PROCESS. */
+  
   close(pipe_rw[1]); /* Close pipe's write-end. */
   if (pipe_rw[0] != STDIN_FILENO)
     {
@@ -66,7 +67,7 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
   return perror("qwait-logout"), exit(2), -1;
   
   
-  /* Parent process. */
+  /* PARENT PROCESS. */
  parent:
   
   close(pipe_rw[0]), pipe_rw[0] = -1; /* Close pipe's read-end. */
@@ -88,13 +89,14 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
   while (reaped != pid)
     {
       reaped = waitpid(pid, &status, 0);
-      if (pid == -1)
+      if (reaped == -1)
 	{
 	  if (errno == EINTR)
 	    continue;
 	  goto fail;
 	}
     }
+  pid = -1;
   
   /* Return as `qwait-logout` exited or died. */
   return WIFEXITED(status) ? WEXITSTATUS(status) : WIFSIGNALED(status) ? WTERMSIG(status) : 1;
