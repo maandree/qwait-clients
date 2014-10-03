@@ -104,7 +104,7 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
   *data_length = written;
   /* Shrink allocation. */
   old = *data;
-  if (xrealloc(*data, written, char))
+  if (xrealloc(*data, written, char) && written)
     *data = old;
   /* Wait for `qwait-logout` to exit. */
   while (reaped != pid)
@@ -120,7 +120,7 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
   pid = -1;
   
   /* Return 0 on success and 1 on login failure. */
-  return status ? 1 : 0;
+  return (status || (*data_length < 2)) ? 1 : 0;
   
   /* Parent process failure. */
  fail:

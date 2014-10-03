@@ -60,7 +60,7 @@ static char* read_password(void)
   char* password = NULL;
   int saved_errno = 0;
   ssize_t length_;
-  size_t i, j, length;
+  size_t i, j, length, n = 0;
   
   /* Disable echo. */
   tcgetattr(STDIN_FILENO, &stty);
@@ -69,16 +69,20 @@ static char* read_password(void)
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &stty);
   
   /* Read password. */
-  length_ = getline(&password, 0, stdin);
+  length_ = getline(&password, &n, stdin);
   if (length_ < 0)
     saved_errno = errno, free(password), password = NULL;
-  length = (size_t)length_;
-  
-  /* Remove NUL-bytes, as they can be caused by kernel errors. */
-  for (i = j = 0; i < length; i++)
-    if (password[i])
-      password[j++] = password[i];
-  password[j] = '\0';
+  else
+    {
+      length = (size_t)length_;
+      
+      /* Remove NUL-bytes, as they can be caused by kernel errors. */
+      for (i = j = 0; i < length; i++)
+	if (password[i])
+	  password[j++] = password[i];
+      /* Remove LF-character. */
+      password[j - 1] = '\0';
+    }
   
   /* Reenable echo. */
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_stty);
@@ -179,8 +183,8 @@ static void log_out(const char* restrict pathname)
     return;
   
   /* Memory map auth file. */
-  address = mmap(0, len, PROT_READ, MAP_PRIVATE, fd, 0);
-  if (address == MAP_FAILED)
+  address = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
+  if ((address == MAP_FAILED) || (address == NULL))
     {
       close(fd);
       return;
@@ -190,8 +194,8 @@ static void log_out(const char* restrict pathname)
   libqwaitclient_auth_log_out(address, len);
   
   /* Release resources. */
-  free(address);
   close(fd);
+  /* Do not free `address`. */
 }
 
 
@@ -207,7 +211,7 @@ static int log_in(const char* restrict pathname, const char* restrict username)
   char* data = NULL;
   char* restrict password = NULL;
   size_t data_length, written = 0;
-  int rc, saved_errno, fd = -1;
+  int rc = -1, saved_errno, fd = -1;
   ssize_t wrote;
   
   /* Get password. */
