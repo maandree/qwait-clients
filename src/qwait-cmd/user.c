@@ -26,6 +26,7 @@
 #include <errno.h>
 
 
+
 /**
  * Print information about a user
  * 
