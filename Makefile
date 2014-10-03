@@ -51,16 +51,16 @@ WARN += -Wdouble-promotion -Wtrampolines -Wsign-conversion -Wsync-nand  \
         -Wunsafe-loop-optimizations -fstack-usage -ftree-vrp            \
 	-fipa-pure-const -funsafe-loop-optimizations
 
-C_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS)
+C_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(CFLAGS) $(CPPFLAGS) -D'LIBEXECDIR="$(LIBEXECDIR)"'
 LD_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS)
 
 LIBQWAITCLIENT_LIBFLAGS = -lrt
 LIBQWAITCLIENT_CFLAGS =
-LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue
+LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue authentication
 
 QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
-QWAIT_CMD_OBJ = qwait-cmd globals queues queue
+QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication
 
 
 # Build rules.

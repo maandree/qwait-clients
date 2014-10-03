@@ -18,11 +18,13 @@
 #include "globals.h"
 #include "queues.h"
 #include "queue.h"
+#include "authentication.h"
 
 #include <libqwaitclient.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 
 #define  t(expression)   if (expression)  goto fail
@@ -38,7 +40,7 @@
 int main(int argc_, char** argv_)
 {
   libqwaitclient_http_socket_t sock;
-  int r = 0, rc = 0;
+  int r = 0, rc = 0, have_sock = 0;
   size_t i, j, n;
   char* nonopts[10];
   int action_list_queues = 0;
@@ -46,6 +48,8 @@ int main(int argc_, char** argv_)
   int action_find_in_queue = 0;
   int action_list_owned = 0;
   int action_list_moderated = 0;
+  int action_log_in = 0;
+  int action_log_out = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -66,6 +70,7 @@ int main(int argc_, char** argv_)
 #define argeq(a, b)            (!strcmp(nonopts[a], b))
 #define argeq1(A, c)           ((c == j) && argeq(0, A))
 #define argeq2(A, B, c)        ((c == j) && argeq(0, A) && argeq(1, B))
+#define argeq3(A, B, C, c)     ((c == j) && argeq(0, A) && argeq(1, B) && argeq(1, C))
 #define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
   
   /* Parse filtered command line arguments. */
@@ -74,19 +79,33 @@ int main(int argc_, char** argv_)
   else if ((j == 4) && argeq(0, "find") && argeq(2, "in"))             action_find_in_queue = 1;
   else if (argeq4("list", "queues", "owned", "by", 5))                 action_list_owned = 1;
   else if (argeq4("list", "queues", "moderated", "by", 5))             action_list_moderated = 1;
+  else if (argeq3("log", "in", "as", 4))                               action_log_in = 3;
+  else if (argeq2("login", "as", 3))                                   action_log_in = 2;
+  else if (argeq2("log", "in", 2) || argeq1("login", 1))               action_log_in = -1;
+  else if (argeq2("log", "out", 2) || argeq1("logout", 1))             action_log_out = 1;
   else
     goto invalid_command;
   
 #undef argeq4
+#undef argeq3
 #undef argeq2
 #undef argeq1
 #undef argeq
   
+#define ta(cond, fun, ...)  t ((cond) && (r = fun(__VA_ARGS__), r < 0))
+  
+  /* Special commands that do not require a connection to the QWait server. */
+  if (action_log_in || action_log_out)
+    {
+      ta (action_log_in,  authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
+      ta (action_log_out, authenticate, NULL);
+      goto done;
+    }
+  
   /* Connect to the server. */
+  have_sock = 1;
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
-  
-#define ta(cond, fun, ...)  t ((cond) && (r = fun(__VA_ARGS__), r < 0))
   
   /* Take action! */
   ta (action_list_queues,    print_queues,           &sock);
@@ -102,13 +121,14 @@ int main(int argc_, char** argv_)
   /* Aced it! */
  done:
   /* Disconnect and destroy. */
-  libqwaitclient_http_socket_disconnect(&sock);
-  libqwaitclient_http_socket_destroy(&sock);
+  if (have_sock)  libqwaitclient_http_socket_disconnect(&sock);
+  if (have_sock)  libqwaitclient_http_socket_destroy(&sock);
   return rc;
   
   /* I just don't know want when wrong! */
  fail:
-  perror(*argv);
+  if (errno)
+    perror(*argv);
   rc = 2;
   goto done;
   

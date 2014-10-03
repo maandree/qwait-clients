@@ -15,17 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENT_H
-#define LIBQWAITCLIENT_H
+#ifndef QWAIT_CMD_AUTHENTICATION_H
+#define QWAIT_CMD_AUTHENTICATION_H
 
 
-#include "libqwaitclient/config.h"
-#include "libqwaitclient/http-message.h"
-#include "libqwaitclient/http-socket.h"
-#include "libqwaitclient/qwait-position.h"
-#include "libqwaitclient/qwait-protocol.h"
-#include "libqwaitclient/qwait-queue.h"
-#include "libqwaitclient/authentication.h"
+/**
+ * Log in or log out
+ * 
+ * @param   username  Your username, `NULL` to log out, an empty string can be
+ *                    used for your username on the computer you are using
+ * @return            Zero on success, -1 on error, 1 if authentication failed
+ */
+int authenticate(const char* restrict username);
 
 
 #endif

@@ -15,17 +15,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENT_H
-#define LIBQWAITCLIENT_H
+#ifndef LIBQWAITCLIENT_AUTHENTICATION_H
+#define LIBQWAITCLIENT_AUTHENTICATION_H
 
 
-#include "libqwaitclient/config.h"
-#include "libqwaitclient/http-message.h"
-#include "libqwaitclient/http-socket.h"
-#include "libqwaitclient/qwait-position.h"
-#include "libqwaitclient/qwait-protocol.h"
-#include "libqwaitclient/qwait-queue.h"
-#include "libqwaitclient/authentication.h"
+#define _GNU_SOURCE
+#include <stddef.h>
+
+
+/**
+ * Request a server-side logout
+ * 
+ * @param   data         The authentication data
+ * @param   data_length  The length of `data`
+ * @return               Zero on possible success, -1 on definite error
+ */
+int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length);
 
 
 #endif
