@@ -30,6 +30,24 @@
  */
 int print_queues(libqwaitclient_http_socket_t* restrict sock);
 
+/**
+ * Print a list of all queues owned by a specified user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int print_owned_queues(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id);
+
+/**
+ * Print a list of all queues moderated by a specified user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int print_moderated_queues(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id);
+
 
 #endif
 

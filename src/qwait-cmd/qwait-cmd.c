@@ -40,10 +40,12 @@ int main(int argc_, char** argv_)
   libqwaitclient_http_socket_t sock;
   int r = 0, rc = 0;
   size_t i, j, n;
-  char* nonopts[5];
+  char* nonopts[10];
   int action_list_queues = 0;
   int action_print_queue = 0;
   int action_find_in_queue = 0;
+  int action_list_owned = 0;
+  int action_list_moderated = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -61,17 +63,21 @@ int main(int argc_, char** argv_)
       nonopts[j++] = argv[i];
     }
   
-#define argeq(a, b)      ((a < j) && !strcmp(nonopts[a], b))
-#define argeq1(A, c)     (argeq(0, A) && (c == j))
-#define argeq2(A, B, c)  (argeq(0, A) && argeq(1, B) && (c == j))
+#define argeq(a, b)            ((a < j) && !strcmp(nonopts[a], b))
+#define argeq1(A, c)           (argeq(0, A) && (c == j))
+#define argeq2(A, B, c)        (argeq(0, A) && argeq(1, B) && (c == j))
+#define argeq4(A, B, C, D, c)  (argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D) && (c == j))
   
   /* Parse filterd command line arguments. */
   if      (argeq2("list", "queues", 2) || argeq1("queues", 1))         action_list_queues = 1;
   else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))  action_print_queue = 1;
   else if (argeq(0, "find") && argeq(2, "in") && (j == 4))             action_find_in_queue = 1;
+  else if (argeq4("list", "queues", "owned", "by", 5))                 action_list_owned = 1;
+  else if (argeq4("list", "queues", "moderated", "by", 5))             action_list_moderated = 1;
   else
     goto invalid_command;
   
+#undef argeq4
 #undef argeq2
 #undef argeq1
 #undef argeq
@@ -80,12 +86,18 @@ int main(int argc_, char** argv_)
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
   
+#define ta(cond, expr)  t((cond) && (r = (expr), r < 0));
+  
   /* Take action! */
-  t (action_list_queues   && (r = print_queues(&sock), r < 0));
-  t (action_print_queue   && (r = print_queue(&sock, nonopts[2]), r < 0));
-  t (action_find_in_queue && (r = print_queue_position(&sock, nonopts[3], nonopts[1]), r < 0));
+  ta (action_list_queues,              print_queues(&sock));
+  ta (action_print_queue,               print_queue(&sock, nonopts[2]));
+  ta (action_find_in_queue,    print_queue_position(&sock, nonopts[3], nonopts[1]));
+  ta (action_list_owned,         print_owned_queues(&sock, nonopts[4]));
+  ta (action_list_moderated, print_moderated_queues(&sock, nonopts[4]));
   if (r >= 0)
     rc = r;
+  
+#undef ta
   
   /* Aced it! */
  done:

@@ -145,7 +145,7 @@ int print_queues(libqwaitclient_http_socket_t* restrict sock)
   /* Print all queues. */
   for (i = 0, first = 1; i < n; i++)
     {
-      const libqwaitclient_qwait_queue_t* queue = queues + i;
+      const libqwaitclient_qwait_queue_t* restrict queue = queues + i;
       
       /* Test filtering. */
       if ((show_hidden == 0) &&  queue->hidden)          continue;
@@ -173,5 +173,112 @@ int print_queues(libqwaitclient_http_socket_t* restrict sock)
       libqwaitclient_qwait_queue_destroy(queues + i);
   free(queues);
   return errno = saved_errno, errno ? -1 : 0;
+}
+
+
+/**
+ * Print a list of all queues owned or moderated by a specified user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The user's ID
+ * @param   owned    Whether to list owned queues, otherwise, moderated queues
+ * @return           Zero on success, -1 on error
+ */
+static int print_admined_queues(libqwaitclient_http_socket_t* restrict sock,
+				const char* restrict user_id, int owned)
+{
+  libqwaitclient_qwait_queue_t* restrict queues = NULL;
+  size_t i, j, n, m;
+  int saved_errno;
+  int show_hidden  = 0;
+  int show_locked  = 1;
+  int show_empty   = 1;
+  int show_details = 0;
+  
+  /* Parse command line for interresting flags. */
+  for (i = 1, n = (size_t)argc; i < n; i++)
+    if      (!strcmp(argv[i],      "--hidden"))  show_hidden  = 1;
+    else if (!strcmp(argv[i],   "--no-hidden"))  show_hidden  = 0;
+    else if (!strcmp(argv[i], "--only-hidden"))  show_hidden  = 2;
+    else if (!strcmp(argv[i],      "--locked"))  show_locked  = 1;
+    else if (!strcmp(argv[i],   "--no-locked"))  show_locked  = 0;
+    else if (!strcmp(argv[i], "--only-locked"))  show_locked  = 2;
+    else if (!strcmp(argv[i],       "--empty"))  show_empty   = 1;
+    else if (!strcmp(argv[i],    "--no-empty"))  show_empty   = 0;
+    else if (!strcmp(argv[i],  "--only-empty"))  show_empty   = 2;
+    else if (!strcmp(argv[i], "--details"))      show_details = 1;
+  
+  /* Acquire queue. */
+  if ((queues = libqwaitclient_qwait_get_queues(sock, &n)) == NULL)  goto fail;
+  /* Sort queue by title. */
+  qsort(queues, n, sizeof(libqwaitclient_qwait_queue_t),
+	libqwaitclient_qwait_queue_compare_by_title);
+  
+  /* Print all queues. */
+  for (i = 0; i < n; i++)
+    {
+      /* Get some queue information. */
+      const libqwaitclient_qwait_queue_t* restrict queue = queues + i;
+      char* const* restrict test_ids = owned ? queue->owners      : queue->moderators;
+      size_t test_id_count           = owned ? queue->owner_count : queue->moderator_count;
+      
+      /* Test filtering. */
+      if ((show_hidden == 0) &&  queue->hidden)          continue;
+      if ((show_locked == 0) &&  queue->locked)          continue;
+      if ((show_empty  == 0) && !queue->position_count)  continue;
+      if ((show_hidden == 2) && !queue->hidden)          continue;
+      if ((show_locked == 2) && !queue->locked)          continue;
+      if ((show_empty  == 2) &&  queue->position_count)  continue;
+      
+      /* Print informated if owner/moderator. */
+      for (j = 0, m = test_id_count; j < m; j++)
+	if (!strcmp(test_ids[j], user_id))
+	  {
+	    /* Print information. */
+	    if (show_details == 0)
+	      printf("%s\n", queue->name);
+	    else
+	      printf("%s (\"%s\")%s%s, %zu\n",
+		     queue->name, queue->title,
+		     queue->hidden ? ", hidden" : "",
+		     queue->locked ? ", locked" : "",
+		     queue->position_count);
+	    break;
+	  }
+    }
+  
+  errno = 0;
+ fail:
+  saved_errno = errno;
+  for (i = 0; i < n; i++)
+      libqwaitclient_qwait_queue_destroy(queues + i);
+  free(queues);
+  return errno = saved_errno, errno ? -1 : 0;
+}
+
+
+/**
+ * Print a list of all queues owned by a specified user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int print_owned_queues(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id)
+{
+  return print_admined_queues(sock, user_id, 1);
+}
+
+
+/**
+ * Print a list of all queues moderated by a specified user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The user's ID
+ * @return           Zero on success, -1 on error
+ */
+int print_moderated_queues(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id)
+{
+  return print_admined_queues(sock, user_id, 0);
 }
 
