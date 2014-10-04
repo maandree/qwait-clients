@@ -121,7 +121,7 @@ get_location ()
 
 # Perform authentiation.
 curl ${CURL_FLAGS_} -L -s -i -b "${cookie}" "$(echo "${page}" | get_location)" >/dev/null
-# FIXME why does this only work if a proxy is used?
+# FIXME why does this only work if a proxy is used? (Also, some steps above does not work with a proxy!)
 
 # Print cookies.
 echo "${cookie}"
