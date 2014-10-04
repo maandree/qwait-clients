@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define _sock_   libqwaitclient_http_socket_t*  restrict sock
@@ -33,6 +34,8 @@
 
 
 #define  t(expression)   if (expression)  goto fail
+
+#define mkstr(buf, ...)  asprintf(&(buf), __VA_ARGS__)
 
 
 
@@ -93,12 +96,11 @@ static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* r
   t (libqwaitclient_http_message_extend_headers(mesg, content == NULL ? 1 : 3) < 0);
   
   /* Add header: Host */
-  t (xmalloc(mesg->headers[mesg->header_count], 7 + strlen(sock->host), char));
-  sprintf(mesg->headers[mesg->header_count++], "Host: %s", sock->host);
+  t (mkstr(mesg->headers[mesg->header_count++], "Host: %s", sock->host));
   
   /* Add headers: Content-Type */
   if (content != NULL)
-    t ((mesg->headers[mesg->header_count++] = strdup("Content-Type: application/json")) == NULL);
+    t (mkstr(mesg->headers[mesg->header_count], "Content-Type: application/json"));
   
   /* Add content. */
   if (content != NULL)
@@ -149,8 +151,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   memset(&json, 0, sizeof(libqwaitclient_json_t));
   libqwaitclient_http_message_zero_initialise(&mesg);
   
-  t ((mesg.top = strdup("GET /api/queues HTTP/1.1")) == NULL);
-  
+  t (mkstr(mesg.top, "GET /api/queues HTTP/1.1"));
   t (protocol_query(sock, &mesg, &json, NULL));
   
   if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
@@ -189,9 +190,7 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   libqwaitclient_http_message_zero_initialise(&mesg);
   libqwaitclient_qwait_queue_initialise(queue);
   
-  t (xmalloc(mesg.top, strlen("GET /api/queue/%s HTTP/1.1") + strlen(queue_name), char));
-  sprintf(mesg.top, "GET /api/queue/%s HTTP/1.1", queue_name);
-  
+  t (mkstr(mesg.top, "GET /api/queue/%s HTTP/1.1", queue_name));
   t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_queue_parse(queue, &json));
   
@@ -221,9 +220,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   libqwaitclient_http_message_zero_initialise(&mesg);
   libqwaitclient_qwait_user_initialise(user);
   
-  t (xmalloc(mesg.top, strlen("GET /api/user/%s HTTP/1.1") + strlen(user_id), char));
-  sprintf(mesg.top, "GET /api/user/%s HTTP/1.1", user_id);
-  
+  t (mkstr(mesg.top, "GET /api/user/%s HTTP/1.1", user_id));
   t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_user_parse(user, &json));
   
@@ -235,6 +232,9 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   return protocol_failure(&mesg, &json), -1;
 }
 
+
+
+#undef mkstr
 
 #undef t
 
