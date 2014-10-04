@@ -22,12 +22,18 @@
 # stdin: Cookies as printed by `qwait-login`
 
 
-# The Origin-header and host to connect to.
-origin="https://login.kth.se"
+# All cookies.
+all_cookies="$(cat)"
 
-# Cookie arguments for curl.
-cookies="$(sed -e ':a;N;$!ba;s/.*\n\n//' | sed -e 's/^/-b /')"
+# curl arguments for cookies for QWait.
+cookies="$(echo "${all_cookies}" | sed -e ':a;N;$!ba;s/\n\n.*//' | sed -e 's/^/-b /')"
 
-# Logout!
-curl -X POST -i ${cookies} -s -H "Origin: ${origin}/" "${origin}/logout" 2>/dev/null >/dev/null
+# curl arguments for cookies for KTH.
+kcookies="$(echo "${all_cookies}" | sed -e ':a;N;$!ba;s/.*\n\n//' | sed -e 's/^/-b /')"
+
+# Logout at QWait!
+curl -i -s ${cookies} "http://qwait.csc.kth.se/logout" >/dev/null
+
+# Logout at KTH!
+curl -i -s ${kcookies} "https://login.kth.se/logout" >/dev/null
 
