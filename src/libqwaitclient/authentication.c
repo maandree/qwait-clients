@@ -32,6 +32,120 @@
 
 
 
+#define _this_  libqwaitclient_authentication_t* restrict this
+
+
+/**
+ * Initialises authentication data
+ * 
+ * @param  this  The authentication data
+ */
+void libqwaitclient_authentication_initialise(_this_)
+{
+  this->headers = NULL;
+  this->header_count = 0;
+}
+
+
+/**
+ * Releases all resources authentication data, but not the structure itself
+ * 
+ * @param  this  The authentication data
+ */
+void libqwaitclient_authentication_destroy(_this_)
+{
+  size_t i, n;
+  n = this->header_count, this->header_count = 0;
+  for (i = 0; i < n; i++)
+    free(this->headers[i]);
+  free(this->headers), this->headers = NULL;
+}
+
+
+/**
+ * Get parsed authentication data for messages
+ * 
+ * @param   this         Output parameter for the parsed authentication data
+ * @param   data         The authentication data
+ * @param   data_length  The length of `data`
+ * @return               Zero on possible success, -1 on definite error
+ */
+int libqwaitclient_authentication_get(_this_, const char* restrict data, size_t data_length)
+{
+  size_t i, header_count = 0, p, offset = strlen("Cookie: ");
+  int saved_errno;
+  
+  libqwaitclient_authentication_initialise(this);
+  
+  for (i = 0; i < data_length; i++)
+    if (data[i] == '\n')
+      header_count++;
+  
+  if (xcalloc(this->headers, header_count, char*))
+    return -1;
+  
+  for (i = 0, p = 0; i < header_count; i++)
+    {
+      char* end = memchr(data + p, '\n', data_length - p);
+      size_t len = (size_t)(end - data);
+      char* buf;
+      
+      if (xmalloc(buf, offset + len + 1, char))
+	goto fail;
+      sprintf(buf, "%s", "Cookie: ");
+      memcpy(buf + offset, data + p, len * sizeof(char));
+      buf[len] = '\0';
+      
+      this->headers[this->header_count++] = buf;
+      
+      p += len + 1;
+    }
+  
+  return 0;
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(this);
+  return errno = saved_errno, -1;
+}
+
+
+/**
+ * Print authentication data to a file for debugging
+ * 
+ * @param  this    The authentication data
+ * @param  output  The output sink
+ */
+void libqwaitclient_authentication_dump(const _this_, FILE* output)
+{
+  size_t i, n;
+  for (i = 0, n = this->header_count; i < n; i++)
+    fprintf(output, "%s\n", this->headers[i]);
+}
+
+
+/**
+ * Add authentication tokens to a message
+ * 
+ * @param   this  The authentication data
+ * @param   mesg  The message to which to add authentication
+ * @return        Zero on success, -1 on error (assuming success of `libqwaitclient_authentication_get`)
+ */
+int libqwaitclient_auth_sign(const _this_, libqwaitclient_http_message_t* restrict mesg)
+{
+  size_t i, n;
+  
+  n = this->header_count;
+  if (libqwaitclient_http_message_extend_headers(mesg, n) < 0)
+    return -1;
+  
+  for (i = 0; i < n; i++)
+    mesg->headers[mesg->header_count++] = this->headers[i];
+  
+  return 0;
+}
+
+
 /**
  * Perform a login
  * 
@@ -218,46 +332,6 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
 
 
 /**
- * Add authentication tokens to a message
- * 
- * @param   mesg         The message to which to add authentication
- * @param   data         The authentication data
- * @param   data_length  The length of `data`
- * @return               Zero on possible success, -1 on definite error
- */
-int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
-			     const char* restrict data, size_t data_length)
-{
-  size_t i, cookie_count = 0, p;
-  
-  for (i = 0; i < data_length; i++)
-    if (data[i] == '\n')
-      cookie_count++;
-  
-  if (libqwaitclient_http_message_extend_headers(mesg, cookie_count) < 0)
-    return -1;
-  
-  for (i = 0, p = 0; i < cookie_count; i++)
-    {
-      char* end = memchr(data + p, '\n', data_length - p);
-      size_t len = (size_t)(end - data);
-      char* restrict buf;
-      
-      if (xmalloc(buf, len + 1, char))
-	return -1;
-      memcpy(buf, data + p, len * sizeof(char));
-      buf[len] = '\0';
-      
-      mesg->headers[mesg->header_count++] = buf;
-      
-      p += len + 1;
-    }
-  
-  return 0;
-}
-
-
-/**
  * Get the user's ID
  * 
  * @param   user_id  Output parameter for the user ID
@@ -310,4 +384,7 @@ int libqwaitclient_auth_user_id(char** restrict user_id)
   
   return *user_id = rc, 0;
 }
+
+
+#undef _this_
 

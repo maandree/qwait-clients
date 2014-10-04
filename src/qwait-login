@@ -99,8 +99,8 @@ if ! echo "${page}" | grep '^Set-Cookie: ' 2>/dev/null >/dev/null; then
 fi
 
 # Print cookies.
-echo "${page}" | grep '^Set-Cookie: ' | cut -d ';' -f 1 | sed -e 's/^Set-Cookie: //'
 echo "${cookie}"
+# echo "${page}" | grep '^Set-Cookie: ' | cut -d ';' -f 1 | sed -e 's/^Set-Cookie: //'
 
 exit 0
 

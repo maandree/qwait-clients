@@ -23,7 +23,71 @@
 
 #define _GNU_SOURCE
 #include <stddef.h>
+#include <stdio.h>
 
+
+
+/**
+ * Message authentication data
+ */
+typedef struct libqwaitclient_authentication {
+  
+  /**
+   * Header to include in the message
+   */
+  char** headers;
+  
+  /**
+   * The number of elements in `header`
+   */
+  size_t header_count;
+  
+} libqwaitclient_authentication_t;
+
+
+#define _this_  libqwaitclient_authentication_t* restrict this
+
+
+/**
+ * Initialises authentication data
+ * 
+ * @param  this  The authentication data
+ */
+void libqwaitclient_authentication_initialise(_this_);
+
+/**
+ * Releases all resources authentication data, but not the structure itself
+ * 
+ * @param  this  The authentication data
+ */
+void libqwaitclient_authentication_destroy(_this_);
+
+/**
+ * Get parsed authentication data for messages
+ * 
+ * @param   this         Output parameter for the parsed authentication data
+ * @param   data         The authentication data
+ * @param   data_length  The length of `data`
+ * @return               Zero on possible success, -1 on definite error
+ */
+int libqwaitclient_authentication_get(_this_, const char* restrict data, size_t data_length);
+
+/**
+ * Print authentication data to a file for debugging
+ * 
+ * @param  this    The authentication data
+ * @param  output  The output sink
+ */
+void libqwaitclient_authentication_dump(const _this_, FILE* output);
+
+/**
+ * Add authentication tokens to a message
+ * 
+ * @param   this  The authentication data
+ * @param   mesg  The message to which to add authentication
+ * @return        Zero on success, -1 on error (assuming success of `libqwaitclient_authentication_get`)
+ */
+int libqwaitclient_auth_sign(const _this_, libqwaitclient_http_message_t* restrict mesg);
 
 /**
  * Perform a login
@@ -47,17 +111,6 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
 int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length);
 
 /**
- * Add authentication tokens to a message
- * 
- * @param   mesg         The message to which to add authentication
- * @param   data         The authentication data
- * @param   data_length  The length of `data`
- * @return               Zero on possible success, -1 on definite error
- */
-int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
-			     const char* restrict data, size_t data_length);
-
-/**
  * Get the user's ID
  * 
  * @param   user_id  Output parameter for the user ID
@@ -68,6 +121,8 @@ int libqwaitclient_auth_sign(libqwaitclient_http_message_t* restrict mesg,
  */
 int libqwaitclient_auth_user_id(char** restrict user_id);
 
+
+#undef _this_
 
 #endif
 

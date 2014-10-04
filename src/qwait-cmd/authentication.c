@@ -307,12 +307,12 @@ int authenticate(const char* restrict username)
 
 
 /**
- * Authenticate message
+ * Get authentication data
  * 
- * @param   mesg  The message to which to add authentication
+ * @param   auth  Output parameter for the authentication data
  * @return        Zero on success, -1 on error
  */
-int authenticate_message(libqwaitclient_http_message_t* restrict mesg)
+int get_authentication(libqwaitclient_authentication_t* restrict auth)
 {
   struct stat attr;
   void* address;
@@ -340,8 +340,8 @@ int authenticate_message(libqwaitclient_http_message_t* restrict mesg)
       return -1;
     }
   
-  /* Add authentication. */
-  r = libqwaitclient_auth_sign(mesg, address, len);
+  /* Get authentication. */
+  r = libqwaitclient_authentication_get(auth, address, len);
   saved_errno = errno;
   
   /* Release resources. */

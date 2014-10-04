@@ -32,12 +32,12 @@
 int authenticate(const char* restrict username);
 
 /**
- * Authenticate message
+ * Get authentication data
  * 
- * @param   mesg  The message to which to add authentication
+ * @param   auth  Output parameter for the authentication data
  * @return        Zero on success, -1 on error
  */
-int authenticate_message(libqwaitclient_http_message_t* restrict mesg);
+int get_authentication(libqwaitclient_authentication_t* restrict auth);
 
 /**
  * Print the user's ID
