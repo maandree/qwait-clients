@@ -194,6 +194,54 @@ void libqwaitclient_http_socket_disconnect(_this_)
 }
 
 
+#ifdef VERBOSE_DEBUG
+/**
+ * Dump the send buffer to stderr
+ * 
+ * @param  this  The HTTP socket
+ */
+static void dump_send_buffer(const _this_)
+{
+  size_t i, j, n;
+  char* str = malloc((this->send_buffer_size * 4 + 1) * sizeof(char));
+  if (str == NULL)
+    {
+      perror("\033[01;31mskipping transmission output");
+      fprintf(stderr, "\033[00m");
+      fflush(stderr);
+    }
+  for (i = j = 0, n = this->send_buffer_size; i < n; i++)
+    {
+      unsigned char c = (unsigned char)(this->send_buffer[i]);
+      if    (c == '\033')   str[j++] = '\\', str[j++] = 'e';
+      else if (c == '\r')   str[j++] = '\\', str[j++] = 'r';
+      else if (c == '\t')   str[j++] = '\\', str[j++] = 't';
+      else if (c == '\a')   str[j++] = '\\', str[j++] = 'a';
+      else if (c == '\f')   str[j++] = '\\', str[j++] = 'f';
+      else if (c == '\v')   str[j++] = '\\', str[j++] = 'v';
+      else if (c == '\b')   str[j++] = '\\', str[j++] = 'b';
+      else if (c == '\n')   str[j++] = '\\', str[j++] = 'n', str[j++] = '\n';
+      else if ((c >= 127) || (c < ' '))
+	{
+	  str[j++] = '\\';
+	  str[j++] = 'x';
+	  str[j++] = "0123456789abcdef"[(c >> 4) & 15];
+	  str[j++] = "0123456789abcdef"[(c >> 0) & 15];
+	}
+      else
+	str[j++] = (char)c;
+    }
+  str[j++] = '\0';
+  fprintf(stderr,
+	  "\033[00;01;35m(start of transmission on next line)\n"
+	  "\033[00;35m%s"
+	  "\033[00;01;35m(end of transmission)\033[00m\n",
+	  str);
+}
+#endif
+
+
+
 /**
  * Send a message over an HTTP socket
  * 
@@ -236,6 +284,9 @@ int libqwaitclient_http_socket_send(_this_, const libqwaitclient_http_message_t*
       
       /* Compose the message. */
       libqwaitclient_http_message_compose(message, this->send_buffer);
+#ifdef VERBOSE_DEBUG
+      dump_send_buffer(this);
+#endif
     }
   
   /* Send as much of the message as possible. */

@@ -34,7 +34,7 @@
 
 
 #define t(expression)    if (expression)  goto fail
-#define mkstr(buf, ...)  asprintf(&(buf), __VA_ARGS__)
+#define mkstr(buf, ...)  (asprintf(&(buf), __VA_ARGS__) < 0)
 
 
 
