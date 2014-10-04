@@ -71,10 +71,11 @@ static void destroy(_mesg_, _json_)
  * 
  * This function will not modify `errno`
  * 
+ * @param  sock  The socket used to remote communication
  * @param  mesg  The received message
  * @param  json  The parsed data, `NULL` if the response is not parsed as JSON
  */
-static void protocol_failure(_mesg_, _json_)
+static void protocol_failure(const _sock_, _mesg_, _json_)
 {
   int saved_errno = errno;
   
@@ -83,13 +84,15 @@ static void protocol_failure(_mesg_, _json_)
   fprintf(stderr, "=============================================\n");
   fprintf(stderr, "RECEIVED MESSAGE:\n");
   fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_http_message_dump(mesg, stderr, 0);
+  libqwaitclient_http_message_dump(&(sock->message), stderr, 0);
   if (json != NULL)
     {
       fprintf(stderr, "---------------------------------------------\n");
       libqwaitclient_json_dump(json, stderr);
     }
   fprintf(stderr, "=============================================\n");
+#else
+  (void) sock;
 #endif
   
   /* Release resources. */
@@ -142,10 +145,7 @@ static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* r
   
   /* Add headers: Content-Length */
   if (content != NULL)
-    {
-      t (xmalloc(mesg->headers[mesg->header_count], 17 + 3 * sizeof(size_t), char));
-      sprintf(mesg->headers[mesg->header_count++], "Content-Length: %zu", mesg->content_size);
-    }
+    t (mkstr(mesg->headers[mesg->header_count++], "Content-Length: %zu", mesg->content_size));
   
   /* Send request, receive response, and parse response. */
   t (libqwaitclient_http_socket_send(sock, mesg));
@@ -192,7 +192,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   
   return destroy(&mesg, &json), *queue_count = n, rc;
  fail:
-  return protocol_failure(&mesg, &json), *queue_count = 0, NULL;
+  return protocol_failure(sock, &mesg, &json), *queue_count = 0, NULL;
 }
 
 
@@ -218,7 +218,7 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   
   return destroy(&mesg, &json), 0;
  fail:
-  return protocol_failure(&mesg, &json), -1;
+  return protocol_failure(sock, &mesg, &json), -1;
 }
 
 
@@ -244,7 +244,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   
   return destroy(&mesg, &json), 0;
  fail:
-  return protocol_failure(&mesg, &json), -1;
+  return protocol_failure(sock, &mesg, &json), -1;
 }
 
 

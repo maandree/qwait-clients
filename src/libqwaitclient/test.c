@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 
-#define  t(expression)   if (expression)  goto fail
+#define t(expression)   if (expression)  goto fail
 
 
 int main(int argc, char** argv)

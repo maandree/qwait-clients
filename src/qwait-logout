@@ -26,7 +26,7 @@
 origin="https://login.kth.se"
 
 # Cookie arguments for curl.
-cookies="$(sed -e 's/^/-b /')"
+cookies="$(sed -e ':a;N;$!ba;s/.*\n\n//' | sed -e 's/^/-b /')"
 
 # Logout!
 curl -X POST -i ${cookies} -s -H "Origin: ${origin}/" "${origin}/logout" 2>/dev/null >/dev/null

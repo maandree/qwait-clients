@@ -22,11 +22,23 @@
 # You can also give curl additional arguments with the environment
 # variable CURL_FLAGS.
 # 
+# Unless ${prefix}/libexec is in $PATH, LIBEXECDIR must be exported
+# with that path and at least one trailing slash.
+# 
 # On success, cookies will be printed to stdout.
 
 
+# Remove CR-characters.
+# stdin: Full HTTP response.
+# stdout: Input from stdin with all CR-characters removed.
+uncr ()
+{
+    sed -e 's/\x0d//g'
+}
+
+
 # Acquire cookie.
-page="$(curl -s -i 'http://qwait.csc.kth.se/login?target=http://qwait.csc.kth.se/')"
+page="$(curl -s -i 'http://qwait.csc.kth.se/login?target=http://qwait.csc.kth.se/' | uncr)"
 cookie="$(echo "${page}" | grep '^Set-Cookie: JSESSIONID=' | sed -e 's/^Set-Cookie: //' | cut -d \; -f 1)"
 if [ -z "${cookie}" ]; then
     exit 1
@@ -57,7 +69,7 @@ username="$(escape "${username}")"
 password="$(escape "${password}")"
 
 # Download login page.
-page="$(curl -i -s "${origin}/login?${params}")"
+page="$(curl -i -s "${origin}/login?${params}" | uncr)"
 
 # Get the value from a <input> node.
 # stdin: Full page.
@@ -101,7 +113,7 @@ kcookie="$(echo "${action}&" | sed -e 's/;/\&/g' -e 's/\?/\&/g' | grep -Po '&jse
 kcookie="$(echo "${kcookie}" | sed -e 's/^.jsessionid=/JSESSIONID=/' -e 's/.$//')"
 
 # Login.
-page="$(curl -X POST -i -s -b "${kcookie}" -d "${data}" -H "Origin: ${origin}/" "${origin}${action}")"
+page="$(curl -X POST -i -s -b "${kcookie}" -d "${data}" -H "Origin: ${origin}/" "${origin}${action}" | uncr)"
 
 # Verify success.
 if echo "${page}" | grep 'Försök igen!' 2>/dev/null >/dev/null; then
@@ -110,6 +122,12 @@ fi
 if ! echo "${page}" | grep '^Location: ' 2>/dev/null >/dev/null; then
     exit 1
 fi
+if ! echo "${page}" | grep '^Set-Cookie: CASTGC=' 2>/dev/null >/dev/null; then
+    exit 1
+fi
+
+# Get a cookie needed at logout.
+castgc="$(echo "${page}" | grep '^Set-Cookie: CASTGC=' | sed -e 's/^Set-Cookie: //' | cut -d \; -f 1)"
 
 # Get the location we should go to.
 # stdin: Full response.
@@ -120,11 +138,13 @@ get_location ()
 }
 
 # Perform authentiation.
-curl ${CURL_FLAGS} -L -s -i -b "${cookie}" "$(echo "${page}" | get_location)" >/dev/null
-# FIXME why does this only work if a proxy is used? (Also, some steps above does not work with a proxy!)
+curl -s -i -b "${cookie}" "$(echo "${page}" | get_location)" >/dev/null
 
 # Print cookies.
 echo "${cookie}"
+echo
+echo "${kcookie}"
+echo "${castgc}"
 
 exit 0
 

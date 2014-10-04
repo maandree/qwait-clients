@@ -79,7 +79,11 @@ int libqwaitclient_authentication_get(_this_, const char* restrict data, size_t 
   
   for (i = 0; i < data_length; i++)
     if (data[i] == '\n')
-      header_count++;
+      {
+	if ((i > 0) && (data[i - 1] == '\n'))
+	  break;
+	header_count++;
+      }
   
   if (xcalloc(this->headers, header_count, char*))
     return -1;
