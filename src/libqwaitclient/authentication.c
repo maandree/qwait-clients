@@ -190,11 +190,11 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
       /* Set pipe write-end to stdout. */
       close(STDOUT_FILENO);
       if (dup2(pipe_rw[1], STDOUT_FILENO) < 0)
-	return perror("qwait-login"), 2;
+	return perror("libqwaitclient-login"), 2;
       close(pipe_rw[1]);
     }
-  execl(LIBEXECDIR "/qwait-login", "qwait-login", NULL);
-  return perror("qwait-login"), exit(2), -1;
+  execl(LIBEXECDIR "/libqwaitclient-login", "libqwaitclient-login", NULL);
+  return perror("libqwaitclient-login"), exit(2), -1;
   
   
   /* PARENT PROCESS. */
@@ -226,7 +226,7 @@ int libqwaitclient_auth_log_in(const char* restrict username, const char* restri
   old = *data;
   if (xrealloc(*data, written, char) && written)
     *data = old;
-  /* Wait for `qwait-logout` to exit. */
+  /* Wait for `libqwaitclient-logout` to exit. */
   while (reaped != pid)
     {
       reaped = waitpid(pid, &status, 0);
@@ -284,18 +284,18 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
       /* Set pipe read-end to stdin. */
       close(STDIN_FILENO);
       if (dup2(pipe_rw[0], STDIN_FILENO) < 0)
-	return perror("qwait-logout"), 2;
+	return perror("libqwaitclient-logout"), 2;
       close(pipe_rw[0]);
     }
-  execl(LIBEXECDIR "/qwait-logout", "qwait-logout", NULL);
-  return perror("qwait-logout"), exit(2), -1;
+  execl(LIBEXECDIR "/libqwaitclient-logout", "libqwaitclient-logout", NULL);
+  return perror("libqwaitclient-logout"), exit(2), -1;
   
   
   /* PARENT PROCESS. */
  parent:
   
   close(pipe_rw[0]), pipe_rw[0] = -1; /* Close pipe's read-end. */
-  /* Write authentication information to `qwait-logout`'s stdin. */
+  /* Write authentication information to `libqwaitclient-logout`'s stdin. */
   written = 0;
   while (written < data_length)
     {
@@ -309,7 +309,7 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
       written += (size_t)wrote;
     }
   close(pipe_rw[1]), pipe_rw[1] = -1; /* Close pipe's write-end. */
-  /* Wait for `qwait-logout` to exit. */
+  /* Wait for `libqwaitclient-logout` to exit. */
   while (reaped != pid)
     {
       reaped = waitpid(pid, &status, 0);
@@ -322,7 +322,7 @@ int libqwaitclient_auth_log_out(const char* restrict data, size_t data_length)
     }
   pid = -1;
   
-  /* Return as `qwait-logout` exited or died. */
+  /* Return as `libqwaitclient-logout` exited or died. */
   return WIFEXITED(status) ? WEXITSTATUS(status) : WIFSIGNALED(status) ? WTERMSIG(status) : 1;
   
   /* Parent process failure. */

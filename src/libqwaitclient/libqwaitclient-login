@@ -17,13 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# USAGE:  env username=<username> password=<password> qwait-login
+# USAGE:  env username=<username> password=<password> libqwaitclient-login
 # 
 # You can also give curl additional arguments with the environment
 # variable CURL_FLAGS.
-# 
-# Unless ${prefix}/libexec is in $PATH, LIBEXECDIR must be exported
-# with that path and at least one trailing slash.
 # 
 # On success, cookies will be printed to stdout.
 
