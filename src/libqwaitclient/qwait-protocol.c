@@ -25,12 +25,111 @@
 #include <stdio.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t* restrict sock
-#define _queue_  libqwaitclient_qwait_queue_t* restrict queue
-#define _user_   libqwaitclient_qwait_user_t*  restrict user
+#define _sock_   libqwaitclient_http_socket_t*  restrict sock
+#define _mesg_   libqwaitclient_http_message_t* restrict mesg
+#define _json_   libqwaitclient_json_t*         restrict json
+#define _queue_  libqwaitclient_qwait_queue_t*  restrict queue
+#define _user_   libqwaitclient_qwait_user_t*   restrict user
 
 
 #define  t(expression)   if (expression)  goto fail
+
+
+
+/**
+ * Common failure procedure for protocol functions
+ * 
+ * This function will not modify `errno`
+ * 
+ * @param  mesg  The received message
+ * @param  json  The parsed data, `NULL` if the response is not parsed as JSON
+ */
+static void protocol_failure(_mesg_, _json_)
+{
+  int saved_errno = errno;
+  
+#ifdef DEBUG
+  /* Dump received message. */
+  fprintf(stderr, "=============================================\n");
+  fprintf(stderr, "RECEIVED MESSAGE:\n");
+  fprintf(stderr, "---------------------------------------------\n");
+  libqwaitclient_http_message_dump(mesg, stderr, 0);
+  if (json != NULL)
+    {
+      fprintf(stderr, "---------------------------------------------\n");
+      libqwaitclient_json_dump(json, stderr);
+    }
+  fprintf(stderr, "=============================================\n");
+#endif
+  
+  /* Release resources. */
+  if (json != NULL)
+    libqwaitclient_json_destroy(json);
+  libqwaitclient_http_message_destroy(mesg);
+  
+  /* If we got EINVAL, it should really be EBADMSG. */
+  if (saved_errno == EINVAL)
+    saved_errno = EBADMSG;
+  
+  errno = saved_errno;
+}
+
+
+/**
+ * Send a query to the server and wait for a response
+ * 
+ * @param   sock     The socket used to remote communication
+ * @param   mesg     Message to send, it will be filled with the standard headers
+ *                   and the content, but `mesg->top` must have been set and
+ *                   authentication headers must have been added if authentication
+ *                   is needed
+ * @param   json     Output parameter for the response, `NULL` if it should not be parsed as JSON
+ * @param   content  Content to add to the message, `NULL` if none:
+ * @return           Zero on success, -1 on error
+ */
+static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* restrict content)
+{
+  /* Allocate space for additional headers. */
+  t (libqwaitclient_http_message_extend_headers(mesg, content == NULL ? 1 : 3) < 0);
+  
+  /* Add header: Host */
+  t (xmalloc(mesg->headers[mesg->header_count], 7 + strlen(sock->host), char));
+  sprintf(mesg->headers[mesg->header_count++], "Host: %s", sock->host);
+  
+  /* Add headers: Content-Type */
+  if (content != NULL)
+    t ((mesg->headers[mesg->header_count++] = strdup("Content-Type: application/json")) == NULL);
+  
+  /* Add content. */
+  if (content != NULL)
+    {
+      char* content_data = NULL;
+      size_t content_length = 0;
+      t (libqwaitclient_json_compose(content, &content_data, &content_length));
+      mesg->content = content_data;
+      mesg->content_size = content_length;
+      mesg->content_ptr = content_length;
+    }
+  
+  /* Add headers: Content-Length */
+  if (content != NULL)
+    {
+      t (xmalloc(mesg->headers[mesg->header_count], 17 + 3 * sizeof(size_t), char));
+      sprintf(mesg->headers[mesg->header_count++], "Content-Length: %zu", mesg->content_size);
+    }
+  
+  /* Send request, receive response, and parse response. */
+  t (libqwaitclient_http_socket_send(sock, mesg));
+  t (libqwaitclient_http_socket_receive(sock));
+  if (json != NULL)
+    t (libqwaitclient_json_parse(json, sock->message.content, sock->message.content_size));
+  
+  return 0;
+  
+ fail:
+  return -1;
+}
+
 
 
 /**
@@ -45,20 +144,14 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   libqwaitclient_qwait_queue_t* restrict rc;
   libqwaitclient_http_message_t mesg;
   libqwaitclient_json_t json;
-  int saved_errno;
   size_t i, n;
   
   memset(&json, 0, sizeof(libqwaitclient_json_t));
-  
   libqwaitclient_http_message_zero_initialise(&mesg);
-  t (libqwaitclient_http_message_extend_headers(&mesg, mesg.header_count = 1) < 0);
-  t (xmalloc(mesg.headers[0], 7 + strlen(sock->host), char));
-  sprintf(mesg.headers[0], "Host: %s", sock->host);
+  
   t ((mesg.top = strdup("GET /api/queues HTTP/1.1")) == NULL);
   
-  t (libqwaitclient_http_socket_send(sock, &mesg));
-  t (libqwaitclient_http_socket_receive(sock));
-  t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
+  t (protocol_query(sock, &mesg, &json, NULL));
   
   if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
     {
@@ -75,21 +168,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   return *queue_count = n, rc;
   
  fail:
-  saved_errno = errno;
-#ifdef DEBUG
-  fprintf(stderr, "=============================================\n");
-  fprintf(stderr, "RECIEVED MESSAGE:\n");
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_http_message_dump(&mesg, stderr, 0);
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_json_dump(&json, stderr);
-  fprintf(stderr, "=============================================\n");
-#endif
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  if (saved_errno == EINVAL)
-    saved_errno = EBADMSG;
-  return *queue_count = 0, errno = saved_errno, NULL;
+  return protocol_failure(&mesg, &json), *queue_count = 0, NULL;
 }
 
 
@@ -105,21 +184,15 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
 {
   libqwaitclient_http_message_t mesg;
   libqwaitclient_json_t json;
-  int saved_errno;
   
   memset(&json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_http_message_zero_initialise(&mesg);
   libqwaitclient_qwait_queue_initialise(queue);
   
-  libqwaitclient_http_message_zero_initialise(&mesg);
-  t (libqwaitclient_http_message_extend_headers(&mesg, mesg.header_count = 1) < 0);
-  t (xmalloc(mesg.headers[0], strlen("Host: %s") + strlen(sock->host), char));
-  sprintf(mesg.headers[0], "Host: %s", sock->host);
   t (xmalloc(mesg.top, strlen("GET /api/queue/%s HTTP/1.1") + strlen(queue_name), char));
   sprintf(mesg.top, "GET /api/queue/%s HTTP/1.1", queue_name);
   
-  t (libqwaitclient_http_socket_send(sock, &mesg));
-  t (libqwaitclient_http_socket_receive(sock));
-  t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
+  t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_queue_parse(queue, &json));
   
   libqwaitclient_json_destroy(&json);
@@ -127,21 +200,7 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   return 0;
   
  fail:
-  saved_errno = errno;
-#ifdef DEBUG
-  fprintf(stderr, "=============================================\n");
-  fprintf(stderr, "RECIEVED MESSAGE:\n");
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_http_message_dump(&mesg, stderr, 0);
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_json_dump(&json, stderr);
-  fprintf(stderr, "=============================================\n");
-#endif
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  if (saved_errno == EINVAL)
-    saved_errno = EBADMSG;
-  return errno = saved_errno, -1;
+  return protocol_failure(&mesg, &json), -1;
 }
 
 
@@ -157,21 +216,15 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 {
   libqwaitclient_http_message_t mesg;
   libqwaitclient_json_t json;
-  int saved_errno;
   
   memset(&json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_http_message_zero_initialise(&mesg);
   libqwaitclient_qwait_user_initialise(user);
   
-  libqwaitclient_http_message_zero_initialise(&mesg);
-  t (libqwaitclient_http_message_extend_headers(&mesg, mesg.header_count = 1) < 0);
-  t (xmalloc(mesg.headers[0], strlen("Host: %s") + strlen(sock->host), char));
-  sprintf(mesg.headers[0], "Host: %s", sock->host);
   t (xmalloc(mesg.top, strlen("GET /api/user/%s HTTP/1.1") + strlen(user_id), char));
   sprintf(mesg.top, "GET /api/user/%s HTTP/1.1", user_id);
   
-  t (libqwaitclient_http_socket_send(sock, &mesg));
-  t (libqwaitclient_http_socket_receive(sock));
-  t (libqwaitclient_json_parse(&json, sock->message.content, sock->message.content_size));
+  t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_user_parse(user, &json));
   
   libqwaitclient_json_destroy(&json);
@@ -179,21 +232,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   return 0;
   
  fail:
-  saved_errno = errno;
-#ifdef DEBUG
-  fprintf(stderr, "=============================================\n");
-  fprintf(stderr, "RECIEVED MESSAGE:\n");
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_http_message_dump(&mesg, stderr, 0);
-  fprintf(stderr, "---------------------------------------------\n");
-  libqwaitclient_json_dump(&json, stderr);
-  fprintf(stderr, "=============================================\n");
-#endif
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  if (saved_errno == EINVAL)
-    saved_errno = EBADMSG;
-  return errno = saved_errno, -1;
+  return protocol_failure(&mesg, &json), -1;
 }
 
 
@@ -202,6 +241,8 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 
 #undef _user_
 #undef _queue_
+#undef _json_
+#undef _mesg_
 #undef _sock_
 
 
@@ -210,10 +251,8 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
      join queue:                PUT /api/queue/<queue.name>/position/<user.user_id>
     leave queue:             DELETE /api/queue/<queue.name>/position/<user.user_id>
     change comment:             PUT /api/queue/<queue.name>/position/<user.user_id>/comment
-                                    Content-Type: application/json
                                     {"comment":<comment>}
     change location:            PUT /api/queue/<queue.name>/position/<user.user_id>/location
-                                    Content-Type: application/json
                                     {"location":<location>}
     
     delete queue:            DELETE /api/queue/<queue.name>
@@ -221,16 +260,12 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
     create queue:               PUT /api/queue/<queue.name>
                                     {"title":<queue.title>}
       hide queue:               PUT /api/queue/<queue.name>/hidden
-                                    Content-Type: application/json
                                     true
     unhide queue:               PUT /api/queue/<queue.name>/hidden
-                                    Content-Type: application/json
                                     false
       lock queue:               PUT /api/queue/<queue.name>/locked
-                                    Content-Type: application/json
                                     true
     unlock queue:               PUT /api/queue/<queue.name>/locked
-                                    Content-Type: application/json
                                     false
    
        add queue moderator:     PUT /api/queue/<queue.name>/moderator/<user.user_id>

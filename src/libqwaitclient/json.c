@@ -1004,6 +1004,24 @@ void libqwaitclient_json_dump(const _this_, FILE* output)
   fprintf(output, "\n");
 }
 
+/**
+ * Serialise a JSON structure
+ * 
+ * @param   this    The JSON structure to serialise
+ * @param   data    Output parameter for the serialised JSON structure, `*data` must be `NULL`
+ * @param   length  The length of `*code`, `*length` must be 0
+ * @return          Zero on success, -1 on error
+ * 
+ * (Remarks on `data` and `length` does not concern recursive calls.)
+ */
+int libqwaitclient_json_compose(const _this_, char** restrict data, size_t* restrict length)
+{
+  (void) this;
+  (void) data;
+  (void) length;
+  return errno = ENOPROTOOPT, -1; /* TODO */
+}
+
 
 #undef _this_
 #undef D
