@@ -25,8 +25,18 @@
 # On success, cookies will be printed to stdout.
 
 
+# Acquire cookie.
+page="$(curl ${CURL_FLAGS} -s -i 'http://qwait.csc.kth.se/login')"
+cookie="$(echo "${page}" | grep '^Set-Cookie: JSESSIONID=' | sed -e 's/^Set-Cookie: //' | cut -d \; -f 1)"
+if [ -z "${cookie}" ]; then
+    exit 1
+fi
+
 # The Origin-header and host to connect to.
 origin="https://login.kth.se"
+
+# Parameters for login.
+params='service=http%3A%2F%2Fqwait.csc.kth.se%3A8080%2Fauthenticate'
 
 # `sed` arguments used to unescape characters that do not need escaping (may not be escaped in this case.)
 unescape="-e s/%30/0/g -e s/%31/1/g -e s/%32/2/g -e s/%33/3/g -e s/%34/4/g -e s/%35/5/g -e s/%36/6/g -e s/%37/7/g -e s/%38/8/g -e s/%39/9/g -e s/%2D/-/g -e s/%5F/_/g -e s/%2E/./g -e s/%7E/~/g -e s/%61/a/g -e s/%62/b/g -e s/%63/c/g -e s/%64/d/g -e s/%65/e/g -e s/%66/f/g -e s/%67/g/g -e s/%68/h/g -e s/%69/i/g -e s/%6A/j/g -e s/%6B/k/g -e s/%6C/l/g -e s/%6D/m/g -e s/%6E/n/g -e s/%6F/o/g -e s/%70/p/g -e s/%71/q/g -e s/%72/r/g -e s/%73/s/g -e s/%74/t/g -e s/%75/u/g -e s/%76/v/g -e s/%77/w/g -e s/%78/x/g -e s/%79/y/g -e s/%7A/z/g -e s/%41/A/g -e s/%42/B/g -e s/%43/C/g -e s/%44/D/g -e s/%45/E/g -e s/%46/F/g -e s/%47/G/g -e s/%48/H/g -e s/%49/I/g -e s/%4A/J/g -e s/%4B/K/g -e s/%4C/L/g -e s/%4D/M/g -e s/%4E/N/g -e s/%4F/O/g -e s/%50/P/g -e s/%51/Q/g -e s/%52/R/g -e s/%53/S/g -e s/%54/T/g -e s/%55/U/g -e s/%56/V/g -e s/%57/W/g -e s/%58/X/g -e s/%59/Y/g -e s/%5A/Z/g"
@@ -47,7 +57,7 @@ username="$(escape "${username}")"
 password="$(escape "${password}")"
 
 # Download login page.
-page="$(curl ${CURL_FLAGS} -i -s "${origin}/login")"
+page="$(curl ${CURL_FLAGS} -i -s "${origin}/login?${params}")"
 
 # Get the value from a <input> node.
 # stdin: Full page.
@@ -84,19 +94,35 @@ if [ -z "${execution}" ]; then
 fi
 
 # Construct string to post.
-data="username=${username}&password=${password}&warn=false&lt=${lt}&execution=${execution}&_eventId=submit&submit=Logga+in"
+data="username=${username}&password=${password}&lt=${lt}&execution=${execution}&_eventId=submit&submit=Logga+in"
 
 # Construct cookie to include.
-cookie="$(echo "${action}&" | sed -e 's/;/\&/g' -e 's/\?/\&/g' | grep -Po '&jsessionid=[^&]+&')"
-cookie="$(echo "${cookie}" | sed -e 's/^.jsessionid=/JSESSIONID=/' -e 's/.$//')"
+kcookie="$(echo "${action}&" | sed -e 's/;/\&/g' -e 's/\?/\&/g' | grep -Po '&jsessionid=[^&]+&')"
+kcookie="$(echo "${kcookie}" | sed -e 's/^.jsessionid=/JSESSIONID=/' -e 's/.$//')"
 
 # Login.
-page="$(curl ${CURL_FLAGS} -X POST -i -s -b "${cookie}" -d "${data}" -H "Origin: ${origin}/" "${origin}${action}")"
+page="$(curl ${CURL_FLAGS} -X POST -i -s -b "${kcookie}" -d "${data}" -H "Origin: ${origin}/" "${origin}${action}")"
 
 # Verify success.
 if echo "${page}" | grep 'Försök igen!' 2>/dev/null >/dev/null; then
     exit 1
 fi
+if ! echo "${page}" | grep '^Location: ' 2>/dev/null >/dev/null; then
+    exit 1
+fi
+
+# Get the location we should go to.
+# stdin: Full response.
+# stdout: The request value.
+get_location ()
+{
+    grep '^Location: ' | sed -e 's/^Location: //'
+}
+
+# Perform authentiation.
+while echo "${page} " | grep '^Location: ' 2>/dev/null >/dev/null; do
+    page="$(curl ${CURL_FLAGS} -s -i -b "${cookie}" "$(echo "${page}" | get_location)")"
+done
 
 # Print cookies.
 echo "${cookie}"
