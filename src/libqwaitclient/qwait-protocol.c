@@ -39,6 +39,34 @@
 
 
 /**
+ * Initialise data used protocol functions
+ * 
+ * @param  mesg  The allocation for the received message
+ * @param  json  The allocation for the parsed data, `NULL` if the response is not parsed as JSON
+ */
+static void initialise(_mesg_, _json_)
+{
+  if (json != NULL)
+    memset(json, 0, sizeof(libqwaitclient_json_t));
+  libqwaitclient_http_message_zero_initialise(mesg);
+}
+
+
+/**
+ * Release data used protocol functions
+ * 
+ * @param  mesg  The allocation for the received message
+ * @param  json  The allocation for the parsed data, `NULL` if the response is not parsed as JSON
+ */
+static void destroy(_mesg_, _json_)
+{
+  if (json != NULL)
+    libqwaitclient_json_destroy(json);
+  libqwaitclient_http_message_destroy(mesg);
+}
+
+
+/**
  * Common failure procedure for protocol functions
  * 
  * This function will not modify `errno`
@@ -147,8 +175,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   libqwaitclient_json_t json;
   size_t i, n;
   
-  memset(&json, 0, sizeof(libqwaitclient_json_t));
-  libqwaitclient_http_message_zero_initialise(&mesg);
+  initialise(&mesg, &json);
   
   t (mkstr(mesg.top, "GET /api/queues HTTP/1.1"));
   t (protocol_query(sock, &mesg, &json, NULL));
@@ -163,9 +190,7 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   for (i = 0; i < n; i++)
     t (libqwaitclient_qwait_queue_parse(rc + i, json.data.array + i));
   
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  return *queue_count = n, rc;
+  return destroy(&mesg, &json), *queue_count = n, rc;
   
  fail:
   return protocol_failure(&mesg, &json), *queue_count = 0, NULL;
@@ -185,17 +210,14 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   libqwaitclient_http_message_t mesg;
   libqwaitclient_json_t json;
   
-  memset(&json, 0, sizeof(libqwaitclient_json_t));
-  libqwaitclient_http_message_zero_initialise(&mesg);
+  initialise(&mesg, &json);
   libqwaitclient_qwait_queue_initialise(queue);
   
   t (mkstr(mesg.top, "GET /api/queue/%s HTTP/1.1", queue_name));
   t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_queue_parse(queue, &json));
   
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  return 0;
+  return destroy(&mesg, &json), 0;
   
  fail:
   return protocol_failure(&mesg, &json), -1;
@@ -215,17 +237,14 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   libqwaitclient_http_message_t mesg;
   libqwaitclient_json_t json;
   
-  memset(&json, 0, sizeof(libqwaitclient_json_t));
-  libqwaitclient_http_message_zero_initialise(&mesg);
+  initialise(&mesg, &json);
   libqwaitclient_qwait_user_initialise(user);
   
   t (mkstr(mesg.top, "GET /api/user/%s HTTP/1.1", user_id));
   t (protocol_query(sock, &mesg, &json, NULL));
   t (libqwaitclient_qwait_user_parse(user, &json));
   
-  libqwaitclient_json_destroy(&json);
-  libqwaitclient_http_message_destroy(&mesg);
-  return 0;
+  return destroy(&mesg, &json), 0;
   
  fail:
   return protocol_failure(&mesg, &json), -1;
