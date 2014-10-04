@@ -50,40 +50,14 @@ static size_t ustrlen(const char* string)
  * Get a colour for a location
  * 
  * @param   location  The location
- * @return            A colour for the location
+ * @return            A colour for the location, `NULL` if the computer room is unknown
  */
 static const char* get_location_colour(const char* location)
 {
-#define test1(A)           (strcasestr(location, A) != NULL)
-#define test2(A, B)        (test1(A) && test1(B))
-#define test3(A, B, C)     (test1(A) && test1(B) && test1(C))
-#define test4(A, B, C, D)  (test1(A) && test1(B) && test1(C) && test1(D))
-  
-  if (test1("cerise"))                      return "01;35";
-  if (test3("blå", "blÅ", "blue"))          return "01;34";
-  if (test3("röd", "rÖd", "red"))           return "01;31";
-  if (test1("orange"))                      return "01;33";
-  if (test2("gul", "yellow"))               return "01;33";
-  if (test3("grön", "grÖn", "green"))       return "01;32";
-  if (test2("brun", "brown"))               return "01;33";
-  if (test4("grå", "grÅ", "grey", "gray"))  return "01";
-  if (test2("karmosin", "crimson"))         return "01;31";
-  if (test2("vit", "white"))                return "01";
-  if (test1("magenta"))                     return "01;35";
-  if (test1("violet"))                      return "01;35";
-  if (test2("turkos", "turquoise"))         return "01;36";
-  if (test1("spel"))                        return "01;31";
-  if (test1("sport"))                       return "01;34";
-  if (test1("musik"))                       return "01;32";
-  if (test1("konst"))                       return "01;33";
-  if (test1("mat"))                         return "01;33";
-  
-  return "00";
-  
-#undef test4
-#undef test3
-#undef test2
-#undef test1
+  int computer_room = libqwaitclient_computers_get_room(location);
+  if (computer_room == LIBQWAITCLIENT_COMPUTERS_UKNOWN)
+    return NULL;
+  return libqwaitclient_computers_get_terminal_colour(computer_room, 0);
 }
 
 
@@ -109,6 +83,7 @@ static int print_position(libqwaitclient_qwait_position_t* restrict position, in
 {
   libqwaitclient_qwait_position_time_t time;
   char* str_time;
+  const char* loc_colour;
   int r;
   
   /* Get time string. */
@@ -134,11 +109,12 @@ static int print_position(libqwaitclient_qwait_position_t* restrict position, in
 #define S(X)  position->X, (int)(max_##X - ustrlen(position->X)), ""
   
   /* Print entry. */
-  printf("%s%*.s%s%s%s    \033[%sm%s%*.s\033[00m    \033[%sm%s%*.s\033[00m    %s\n",
-    S(real_name), show_id ? " (" : "", show_id ? position->user_id : "", show_id ? ")" : "",
-    get_location_colour(position->location), S(location),
-    is_help ? "01" : "00", S(comment),
-    str_time);
+  loc_colour = get_location_colour(position->location);
+  printf("%s%*.s%s%s%s    \033[00;%s%sm%s%*.s\033[00m    \033[%sm%s%*.s\033[00m    %s\n",
+	 S(real_name), show_id ? " (" : "", show_id ? position->user_id : "", show_id ? ")" : "",
+	 loc_colour == NULL ? "00" : loc_colour, loc_colour == NULL ? "" : ";01", S(location),
+	 is_help ? "01" : "00", S(comment),
+	 str_time);
   
 #undef S
   
