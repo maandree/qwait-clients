@@ -209,6 +209,7 @@ static void dump_send_buffer(const _this_)
       perror("\033[01;31mskipping transmission output");
       fprintf(stderr, "\033[00m");
       fflush(stderr);
+      return;
     }
   for (i = j = 0, n = this->send_buffer_size; i < n; i++)
     {
