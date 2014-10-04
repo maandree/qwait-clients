@@ -19,7 +19,9 @@
 #define LIBQWAITCLIENT_MESSAGE_H
 
 
+#define _GNU_SOURCE
 #include <stddef.h>
+#include <stdio.h>
 
 
 /**
@@ -180,6 +182,16 @@ size_t libqwaitclient_http_message_compose_size(const _this_) __attribute__((pur
  */
 void libqwaitclient_http_message_compose(const _this_, char* restrict data);
 
+/**
+ * Print the message in debug format, this
+ * is not a serialisation for sending data to
+ * other machines, it is simply a debugging tool
+ * 
+ * @param  this               The message
+ * @param  output             The output sink
+ * @param  include_internals  Whether to include internal data in the output
+ */
+void libqwaitclient_http_message_dump(const _this_, FILE* output, int include_internals);
 
 
 #undef _this_

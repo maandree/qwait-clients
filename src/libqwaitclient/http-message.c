@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <inttypes.h>
 
 
 #define _this_ libqwaitclient_http_message_t* restrict this
@@ -643,6 +644,93 @@ void libqwaitclient_http_message_compose(const _this_, char* restrict data)
   
   if (this->content_size > 0)
     memcpy(data, this->content, this->content_size * sizeof(char));
+}
+
+
+/**
+ * Print the message in debug format, this
+ * is not a serialisation for sending data to
+ * other machines, it is simply a debugging tool
+ * 
+ * @param  this               The message
+ * @param  output             The output sink
+ * @param  include_internals  Whether to include internal data in the output
+ */
+void libqwaitclient_http_message_dump(const _this_, FILE* output, int include_internals)
+{
+  size_t i, n, p, m, max;
+  
+  /* There is no such thing as INT_MAX, so here is a portable alternative. */
+  max = 1 << (8 * sizeof(int) - 2);
+  max |= max - 1;
+  
+  /* Print the message head. (Request/response type, URL and protocol.) */
+  fprintf(output, "%s\n", this->top);
+  
+  /* Print headers. */
+  for (i = 0, n = this->header_count; i < n; i++)
+    fprintf(output, "%s\n", this->headers[i]);
+  
+  /* Print message if not empty. */
+  n = include_internals ? this->content_ptr : this->content_size;
+  if (n > 0)
+    {
+      /* Print empty line to delimit the head and headers from the content. */
+      fprintf(output, "\n");
+      
+      /* Print content. */
+      for (p = 0; p < n; p += m)
+	{
+	  m = min(n - p, max);
+	  fprintf(output, "%.*s", (int)m, this->content + p);
+	}
+      
+      /* Did the content end with a new line or not? */
+      if (this->content[n - 1] == '\n')
+	fprintf(output, "(LF-terminated)\n");
+      else
+	fprintf(output, "\n(not LF-terminated)\n");
+    }
+  
+  /* The rest is internal data. */
+  if (include_internals == 0)
+    return;
+  
+  /* Delimit message from internal data with an empty line. */
+  fprintf(output, "\n");
+  
+  /* Print non-text internal data. */
+  fprintf(output, "Content size: %zu\n", this->content_size);
+  fprintf(output, "Content read: %zu\n", this->content_ptr);
+  fprintf(output, "Parsing stage: %i\n", this->stage);
+  switch (this->transfer_encoding)
+    {
+    case KNOWN_LENGTH:      fprintf(output, "Transfer encoding: known length\n");                break;
+    case CHUNKED_TRANSFER:  fprintf(output, "Transfer encoding: chunked transfer\n");            break;
+    default:                fprintf(output, "Transfer encoding: (something is wrong here!)\n");  break;
+    }
+  fprintf(output, "Buffer allocation: %zu\n", this->buffer_size);
+  fprintf(output, "Buffer pointer: %zu\n",    this->buffer_ptr);
+  
+  /* If the buffer is empty, do not print it. */
+  if (n = this->buffer_ptr, n == 0)
+    return;
+  
+  /* What are we about to print? */
+  fprintf(output, "Buffer data:\n");
+  
+  /* Print the internal buffer. */
+  for (p = 0; p < n; p += m)
+    {
+      m = min(n - p, max);
+      fprintf(output, "%.*s", (int)m, this->buffer + p);
+    }
+  
+  /* Did the content in the buffer end with a new line or not? */
+  if (this->buffer[n - 1] == '\n')
+    fprintf(output, "(LF-terminated)\n");
+  else
+    fprintf(output, "\n(not LF-terminated)\n");
 }
 
 

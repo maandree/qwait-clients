@@ -80,6 +80,8 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
   fprintf(stderr, "=============================================\n");
   fprintf(stderr, "RECIEVED MESSAGE:\n");
   fprintf(stderr, "---------------------------------------------\n");
+  libqwaitclient_http_message_dump(&mesg, stderr, 0);
+  fprintf(stderr, "---------------------------------------------\n");
   libqwaitclient_json_dump(&json, stderr);
   fprintf(stderr, "=============================================\n");
 #endif
@@ -130,6 +132,8 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   fprintf(stderr, "=============================================\n");
   fprintf(stderr, "RECIEVED MESSAGE:\n");
   fprintf(stderr, "---------------------------------------------\n");
+  libqwaitclient_http_message_dump(&mesg, stderr, 0);
+  fprintf(stderr, "---------------------------------------------\n");
   libqwaitclient_json_dump(&json, stderr);
   fprintf(stderr, "=============================================\n");
 #endif
@@ -179,6 +183,8 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 #ifdef DEBUG
   fprintf(stderr, "=============================================\n");
   fprintf(stderr, "RECIEVED MESSAGE:\n");
+  fprintf(stderr, "---------------------------------------------\n");
+  libqwaitclient_http_message_dump(&mesg, stderr, 0);
   fprintf(stderr, "---------------------------------------------\n");
   libqwaitclient_json_dump(&json, stderr);
   fprintf(stderr, "=============================================\n");
