@@ -241,7 +241,6 @@ static void dump_send_buffer(const _this_)
 #endif
 
 
-
 /**
  * Send a message over an HTTP socket
  * 
