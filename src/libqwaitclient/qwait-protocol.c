@@ -191,7 +191,6 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
     t (libqwaitclient_qwait_queue_parse(rc + i, json.data.array + i));
   
   return destroy(&mesg, &json), *queue_count = n, rc;
-  
  fail:
   return protocol_failure(&mesg, &json), *queue_count = 0, NULL;
 }
@@ -218,7 +217,6 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
   t (libqwaitclient_qwait_queue_parse(queue, &json));
   
   return destroy(&mesg, &json), 0;
-  
  fail:
   return protocol_failure(&mesg, &json), -1;
 }
@@ -245,7 +243,6 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
   t (libqwaitclient_qwait_user_parse(user, &json));
   
   return destroy(&mesg, &json), 0;
-  
  fail:
   return protocol_failure(&mesg, &json), -1;
 }
