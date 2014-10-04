@@ -198,3 +198,40 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 #undef _queue_
 #undef _sock_
 
+
+/*  Other protocol parts:
+    
+     join queue:                PUT /api/queue/<queue.name>/position/<user.user_id>
+    leave queue:             DELETE /api/queue/<queue.name>/position/<user.user_id>
+    change comment:             PUT /api/queue/<queue.name>/position/<user.user_id>/comment
+                                    Content-Type: application/json
+                                    {"comment":<comment>}
+    change location:            PUT /api/queue/<queue.name>/position/<user.user_id>/location
+                                    Content-Type: application/json
+                                    {"location":<location>}
+    
+    delete queue:            DELETE /api/queue/<queue.name>
+     clear queue:              POST /api/queue/<queue.name>/clear
+    create queue:               PUT /api/queue/<queue.name>
+                                    {"title":<queue.title>}
+      hide queue:               PUT /api/queue/<queue.name>/hidden
+                                    Content-Type: application/json
+                                    true
+    unhide queue:               PUT /api/queue/<queue.name>/hidden
+                                    Content-Type: application/json
+                                    false
+      lock queue:               PUT /api/queue/<queue.name>/locked
+                                    Content-Type: application/json
+                                    true
+    unlock queue:               PUT /api/queue/<queue.name>/locked
+                                    Content-Type: application/json
+                                    false
+   
+       add queue moderator:     PUT /api/queue/<queue.name>/moderator/<user.user_id>
+    remove queue moderator:  DELETE /api/queue/<queue.name>/moderator/<user.user_id>
+       add queue owner:         PUT /api/queue/<queue.name>/owner/<user.user_id>
+    remove queue owner:      DELETE /api/queue/<queue.name>/owner/<user.user_id>
+
+queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
+ */
+
