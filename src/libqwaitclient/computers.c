@@ -28,110 +28,63 @@
  */
 static int computer_colours[][3] =
   {
-    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = { -1,  -1,  -1},
-    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = {255, 192, 203},
-    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = {  0,   0, 255},
-    [LIBQWAITCLIENT_COMPUTERS_RED]       = {255,   0,   0},
-    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = {255, 127,   0},
-    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = {255, 255,   0},
-    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = {  0, 128,   0},
-    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = {127,  63,  31},
-    [LIBQWAITCLIENT_COMPUTERS_GREY]      = {128, 128, 128},
-    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = {217,  21,  54},
-    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = {255, 255, 255},
-    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = {255,   0, 255},
-    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = {172,   0, 230},
-    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = { 64, 224, 208},
-    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = {230, 173, 173},
-    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = {173, 173, 230},
-    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = {173, 231, 173},
-    [LIBQWAITCLIENT_COMPUTERS_KONST]     = {232, 231, 175},
-    [LIBQWAITCLIENT_COMPUTERS_MAT]       = {232, 201, 175}
+    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = {  -1,  -1,  -1 },
+    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = { 255, 192, 203 },
+    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = {   0,   0, 255 },
+    [LIBQWAITCLIENT_COMPUTERS_RED]       = { 255,   0,   0 },
+    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = { 255, 127,   0 },
+    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = { 255, 255,   0 },
+    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = {   0, 128,   0 },
+    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = { 127,  63,  31 },
+    [LIBQWAITCLIENT_COMPUTERS_GREY]      = { 128, 128, 128 },
+    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = { 217,  21,  54 },
+    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = { 255, 255, 255 },
+    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = { 255,   0, 255 },
+    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = { 172,   0, 230 },
+    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = {  64, 224, 208 },
+    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = { 230, 173, 173 },
+    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = { 173, 173, 230 },
+    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = { 173, 231, 173 },
+    [LIBQWAITCLIENT_COMPUTERS_KONST]     = { 232, 231, 175 },
+    [LIBQWAITCLIENT_COMPUTERS_MAT]       = { 232, 201, 175 }
   };
 
 
 /**
- * Gross foreground colours suitable for 8- and 16-colour
- * terminals
+ * With inner array index 0:
+ *   Gross foreground colours suitable for 8- and 16-colour
+ *   terminals
+ * 
+ * With inner array index 1:
+ *   Rather accurate foreground colours suitable for
+ *   256-colour terminals
+ * 
+ * With inner array index 2:
+ *   Accurate foreground colours suitable for
+ *   terminals capable for displaying 24-bit colours
+ *   encoded with the specification used in KDE's Konsole
  */
-static const char* computer_colours_term_8[] =
+static const char* computer_colours_term[][3] =
   {
-    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = "00",
-    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = "35",
-    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = "34",
-    [LIBQWAITCLIENT_COMPUTERS_RED]       = "31",
-    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = "33",
-    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = "33",
-    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = "32",
-    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = "33",
-    [LIBQWAITCLIENT_COMPUTERS_GREY]      = "00",
-    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = "31",
-    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = "00",
-    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = "35",
-    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = "35",
-    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = "36",
-    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = "31",
-    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = "34",
-    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = "32",
-    [LIBQWAITCLIENT_COMPUTERS_KONST]     = "33",
-    [LIBQWAITCLIENT_COMPUTERS_MAT]       = "33"
-  };
-
-
-/**
- * Rather accurate foreground colours suitable for
- ' 256-colour terminals
- */
-static const char* computer_colours_term_256[] =
-  {
-    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = "00",
-    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = "38;5;217",
-    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = "38;5;21",
-    [LIBQWAITCLIENT_COMPUTERS_RED]       = "38;5;196",
-    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = "38;5;208",
-    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = "38;5;226",
-    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = "38;5;28",
-    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = "38;5;95",
-    [LIBQWAITCLIENT_COMPUTERS_GREY]      = "38;5;244",
-    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = "38;5;167",
-    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = "38;5;231",
-    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = "38;5;201",
-    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = "38;5;128",
-    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = "38;5;44",
-    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = "38;5;181",
-    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = "38;5;146",
-    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = "38;5;151",
-    [LIBQWAITCLIENT_COMPUTERS_KONST]     = "38;5;187",
-    [LIBQWAITCLIENT_COMPUTERS_MAT]       = "38;5;223"
-  };
-
-
-/**
- * Accurate foreground colours suitable for
- * terminals capable for displaying 24-bit colours
- * encoded with the specification used in KDE's Konsole
- */
-static const char* computer_colours_term_24bits[] =
-  {
-    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = "00",
-    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = "38;2;255;192;203",
-    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = "38;2;0;0;255",
-    [LIBQWAITCLIENT_COMPUTERS_RED]       = "38;2;255;0;0",
-    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = "38;2;255;127;0",
-    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = "38;2;255;255;0",
-    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = "38;2;0;128;0",
-    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = "38;2;127;63;31",
-    [LIBQWAITCLIENT_COMPUTERS_GREY]      = "38;2;128;128;128",
-    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = "38;2;217;21;54",
-    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = "38;2;255;255;255",
-    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = "38;2;255;0;255",
-    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = "38;2;172;0;230",
-    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = "38;2;64;224;208",
-    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = "38;2;230;173;173",
-    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = "38;2;173;173;230",
-    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = "38;2;173;231;173",
-    [LIBQWAITCLIENT_COMPUTERS_KONST]     = "38;2;232;231;175",
-    [LIBQWAITCLIENT_COMPUTERS_MAT]       = "38;2;232;201;175"
+    [LIBQWAITCLIENT_COMPUTERS_UKNOWN]    = { "00", "00",       "00"               },
+    [LIBQWAITCLIENT_COMPUTERS_CERISE]    = { "35", "38;5;217", "38;2;255;192;203" },
+    [LIBQWAITCLIENT_COMPUTERS_BLUE]      = { "34", "38;5;21",  "38;2;0;0;255"     },
+    [LIBQWAITCLIENT_COMPUTERS_RED]       = { "31", "38;5;196", "38;2;255;0;0"     },
+    [LIBQWAITCLIENT_COMPUTERS_ORANGE]    = { "33", "38;5;208", "38;2;255;127;0"   },
+    [LIBQWAITCLIENT_COMPUTERS_YELLOW]    = { "33", "38;5;226", "38;2;255;255;0"   },
+    [LIBQWAITCLIENT_COMPUTERS_GREEN]     = { "32", "38;5;28",  "38;2;0;128;0"     },
+    [LIBQWAITCLIENT_COMPUTERS_BROWN]     = { "33", "38;5;95",  "38;2;127;63;31"   },
+    [LIBQWAITCLIENT_COMPUTERS_GREY]      = { "00", "38;5;244", "38;2;128;128;128" },
+    [LIBQWAITCLIENT_COMPUTERS_CRIMSON]   = { "31", "38;5;167", "38;2;217;21;54"   },
+    [LIBQWAITCLIENT_COMPUTERS_WHITE]     = { "00", "38;5;231", "38;2;255;255;255" },
+    [LIBQWAITCLIENT_COMPUTERS_MAGENTA]   = { "35", "38;5;201", "38;2;255;0;255"   },
+    [LIBQWAITCLIENT_COMPUTERS_VIOLET]    = { "35", "38;5;128", "38;2;172;0;230"   },
+    [LIBQWAITCLIENT_COMPUTERS_TURQUOISE] = { "36", "38;5;44",  "38;2;64;224;208"  },
+    [LIBQWAITCLIENT_COMPUTERS_SPEL]      = { "31", "38;5;181", "38;2;230;173;173" },
+    [LIBQWAITCLIENT_COMPUTERS_SPORT]     = { "34", "38;5;146", "38;2;173;173;230" },
+    [LIBQWAITCLIENT_COMPUTERS_MUSIK]     = { "32", "38;5;151", "38;2;173;231;173" },
+    [LIBQWAITCLIENT_COMPUTERS_KONST]     = { "33", "38;5;187", "38;2;232;231;175" },
+    [LIBQWAITCLIENT_COMPUTERS_MAT]       = { "33", "38;5;223", "38;2;232;201;175" }
   };
 
 
@@ -210,24 +163,24 @@ int libqwaitclient_computers_get_room(const char* restrict location)
  */
 const char* libqwaitclient_computers_get_terminal_colour(int computer_room, int colour_depth)
 {
-  const char* const* map = computer_colours_term_8;
+  int term = 0;
   
-  if      (colour_depth == 256)  map = computer_colours_term_256;
-  else if (colour_depth == 24)   map = computer_colours_term_24bits;
+  if      (colour_depth == 256)  term = 1;
+  else if (colour_depth == 24)   term = 2;
   else if (colour_depth == 0)
     {
       char* env = getenv("TERM");
       if (env && !strcmp(env, "xterm-256color"))
-	map = computer_colours_term_256;
+	term = 1;
       
       env = getenv("QWAIT_TERM_COLOURS");
-      if      (env && !strcmp(env, "8"))    map = computer_colours_term_8;
-      else if (env && !strcmp(env, "16"))   map = computer_colours_term_8;
-      else if (env && !strcmp(env, "256"))  map = computer_colours_term_256;
-      else if (env && !strcmp(env, "24"))   map = computer_colours_term_24bits;
+      if      (env && !strcmp(env, "8"))    term = 0;
+      else if (env && !strcmp(env, "16"))   term = 0;
+      else if (env && !strcmp(env, "256"))  term = 1;
+      else if (env && !strcmp(env, "24"))   term = 2;
     }
   
-  return map[computer_room];
+  return computer_colours_term[computer_room][term];
 }
 
 
