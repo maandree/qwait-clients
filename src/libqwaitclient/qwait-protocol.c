@@ -33,8 +33,7 @@
 #define _user_   libqwaitclient_qwait_user_t*   restrict user
 
 
-#define  t(expression)   if (expression)  goto fail
-
+#define t(expression)    if (expression)  goto fail
 #define mkstr(buf, ...)  asprintf(&(buf), __VA_ARGS__)
 
 
@@ -235,7 +234,6 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 
 
 #undef mkstr
-
 #undef t
 
 
