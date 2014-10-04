@@ -131,13 +131,16 @@ void libqwaitclient_authentication_dump(const _this_, FILE* output)
 /**
  * Add authentication tokens to a message
  * 
- * @param   this  The authentication data
+ * @param   this  The authentication data, may be `NULL`
  * @param   mesg  The message to which to add authentication
  * @return        Zero on success, -1 on error (assuming success of `libqwaitclient_authentication_get`)
  */
 int libqwaitclient_auth_sign(const _this_, libqwaitclient_http_message_t* restrict mesg)
 {
   size_t i, n;
+  
+  if (this == NULL)
+    return 0;
   
   n = this->header_count;
   if (libqwaitclient_http_message_extend_headers(mesg, n) < 0)

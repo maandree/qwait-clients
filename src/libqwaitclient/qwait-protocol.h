@@ -22,14 +22,16 @@
 #include "http-socket.h"
 #include "qwait-queue.h"
 #include "qwait-user.h"
+#include "authentication.h"
 
 #define _GNU_SOURCE
 #include <stddef.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t* restrict sock
-#define _queue_  libqwaitclient_qwait_queue_t* restrict queue
-#define _user_   libqwaitclient_qwait_user_t*  restrict user
+#define _sock_   libqwaitclient_http_socket_t*    restrict sock
+#define _auth_   libqwaitclient_authentication_t* restrict auth
+#define _queue_  libqwaitclient_qwait_queue_t*    restrict queue
+#define _user_   libqwaitclient_qwait_user_t*     restrict user
 
 
 /**
@@ -52,6 +54,37 @@ libqwaitclient_qwait_queue_t* libqwaitclient_qwait_get_queues(_sock_, size_t* re
 int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_name);
 
 /**
+ * Get complete information on all QWait administrators
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_count  Output parameter for the number of returned users
+ * @return              Information on all administrators, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_admins(_sock_, const _auth_, size_t* restrict user_count);
+
+/**
+ * Get complete information on all QWait users
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_count  Output parameter for the number of returned users
+ * @return              Information on all users, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_users(_sock_, const _auth_, size_t* restrict user_count);
+
+/**
+ * Find users by their real name
+ * 
+ * @param   sock           The socket used to remote communication
+ * @param   auth          User authentication
+ * @param   partial_name  The all returned user's real name should contain this string
+ * @param   user_count    Output parameter for the number of returned users
+ * @return                Information on all found users, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_find_user(_sock_, const _auth_, const char* partial_name,
+							    size_t* restrict user_count);
+/**
  * Get complete information about a user
  * 
  * @param   sock     The socket used to remote communication
@@ -64,6 +97,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id);
 
 #undef _user_
 #undef _queue_
+#undef _auth_
 #undef _sock_
 
 

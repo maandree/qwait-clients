@@ -1,2 +1,7 @@
 We need to take care of error messages from the server.
 
+Needs testing:
+      libqwaitclient_qwait_get_admins
+      libqwaitclient_qwait_get_users
+      libqwaitclient_qwait_find_user
+

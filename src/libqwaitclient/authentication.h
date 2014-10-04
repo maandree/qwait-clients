@@ -83,7 +83,7 @@ void libqwaitclient_authentication_dump(const _this_, FILE* output);
 /**
  * Add authentication tokens to a message
  * 
- * @param   this  The authentication data
+ * @param   this  The authentication data, may be `NULL`
  * @param   mesg  The message to which to add authentication
  * @return        Zero on success, -1 on error (assuming success of `libqwaitclient_authentication_get`)
  */

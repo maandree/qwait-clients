@@ -26,11 +26,12 @@
 #include <stdlib.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t*  restrict sock
-#define _mesg_   libqwaitclient_http_message_t* restrict mesg
-#define _json_   libqwaitclient_json_t*         restrict json
-#define _queue_  libqwaitclient_qwait_queue_t*  restrict queue
-#define _user_   libqwaitclient_qwait_user_t*   restrict user
+#define _sock_   libqwaitclient_http_socket_t*    restrict sock
+#define _mesg_   libqwaitclient_http_message_t*   restrict mesg
+#define _auth_   libqwaitclient_authentication_t* restrict auth
+#define _json_   libqwaitclient_json_t*           restrict json
+#define _queue_  libqwaitclient_qwait_queue_t*    restrict queue
+#define _user_   libqwaitclient_qwait_user_t*     restrict user
 
 
 #define t(expression)    if (expression)  goto fail
@@ -160,6 +161,43 @@ static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* r
 }
 
 
+/**
+ * Create a URI-safe version of a string
+ * 
+ * @param   string  The unescaped string
+ * @return          Corresponding URI-escaped string without
+ *                  unnecessarily escaped characters, `NULL` on error
+ */
+static char* uri_encode(const char* restrict string)
+{
+  char* rc;
+  size_t i, j, n;
+  
+  n = strlen(string);
+  t (xmalloc(rc, n * 3 + 1, char));
+  
+  for (i = j = 0; i < n; i++)
+    {
+      char c = string[i];
+      if      (('a' <= c) && (c <= 'z'))     rc[j++] = c;
+      else if (('A' <= c) && (c <= 'Z'))     rc[j++] = c;
+      else if (strchr("0123456789-_.~", c))  rc[j++] = c;
+      else
+	{
+	  rc[j++] = '%';
+	  rc[j++] = "0123456789ABCDEF"[(c >> 4) & 15];
+	  rc[j++] = "0123456789ABCDEF"[(c >> 0) & 15];
+	}
+    }
+  
+  rc[j] = '\n';
+  return rc;
+  
+ fail:
+  return NULL;
+}
+
+
 
 /**
  * Get complete information on all queues
@@ -223,6 +261,121 @@ int libqwaitclient_qwait_get_queue(_sock_, _queue_, const char* restrict queue_n
 
 
 /**
+ * Get complete information on all QWait administrators
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_count  Output parameter for the number of returned users
+ * @return              Information on all administrators, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_admins(_sock_, const _auth_, size_t* restrict user_count)
+{
+  libqwaitclient_qwait_user_t* restrict rc;
+  libqwaitclient_http_message_t mesg;
+  libqwaitclient_json_t json;
+  size_t i, n;
+  
+  initialise(&mesg, &json);
+  
+  t (libqwaitclient_auth_sign(auth, &mesg));
+  t (mkstr(mesg.top, "GET /api/users?role=admin HTTP/1.1"));
+  t (protocol_query(sock, &mesg, &json, NULL));
+  
+  if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
+    {
+      errno = EBADMSG;
+      goto fail;
+    }
+  n = json.length;
+  t (xcalloc(rc, max(n, 1), libqwaitclient_qwait_user_t)); /* `max(n, 1)`: do not return `NULL`. */
+  for (i = 0; i < n; i++)
+    t (libqwaitclient_qwait_user_parse(rc + i, json.data.array + i));
+  
+  return destroy(&mesg, &json), *user_count = n, rc;
+ fail:
+  return protocol_failure(sock, &mesg, &json), *user_count = 0, NULL;
+}
+
+
+/**
+ * Get complete information on all QWait users
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_count  Output parameter for the number of returned users
+ * @return              Information on all users, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_users(_sock_, const _auth_, size_t* restrict user_count)
+{
+  libqwaitclient_qwait_user_t* restrict rc;
+  libqwaitclient_http_message_t mesg;
+  libqwaitclient_json_t json;
+  size_t i, n;
+  
+  initialise(&mesg, &json);
+  
+  t (libqwaitclient_auth_sign(auth, &mesg));
+  t (mkstr(mesg.top, "GET /api/users HTTP/1.1"));
+  t (protocol_query(sock, &mesg, &json, NULL));
+  
+  if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
+    {
+      errno = EBADMSG;
+      goto fail;
+    }
+  n = json.length;
+  t (xcalloc(rc, max(n, 1), libqwaitclient_qwait_user_t)); /* `max(n, 1)`: do not return `NULL`. */
+  for (i = 0; i < n; i++)
+    t (libqwaitclient_qwait_user_parse(rc + i, json.data.array + i));
+  
+  return destroy(&mesg, &json), *user_count = n, rc;
+ fail:
+  return protocol_failure(sock, &mesg, &json), *user_count = 0, NULL;
+}
+
+
+/**
+ * Find users by their real name
+ * 
+ * @param   sock           The socket used to remote communication
+ * @param   auth          User authentication
+ * @param   partial_name  The all returned user's real name should contain this string
+ * @param   user_count    Output parameter for the number of returned users
+ * @return                Information on all found users, `NULL` on error
+ */
+libqwaitclient_qwait_user_t* libqwaitclient_qwait_find_user(_sock_, const _auth_, const char* partial_name,
+							    size_t* restrict user_count)
+{
+  libqwaitclient_qwait_user_t* restrict rc;
+  libqwaitclient_http_message_t mesg;
+  libqwaitclient_json_t json;
+  char* partial_name_uri = NULL;
+  size_t i, n;
+  
+  initialise(&mesg, &json);
+  
+  t (libqwaitclient_auth_sign(auth, &mesg));
+  t (!(partial_name_uri = uri_encode(partial_name)));
+  t (mkstr(mesg.top, "GET /api/users?query=%s HTTP/1.1", partial_name_uri));
+  t (protocol_query(sock, &mesg, &json, NULL));
+  
+  if (json.type != LIBQWAITCLIENT_JSON_TYPE_ARRAY)
+    {
+      errno = EBADMSG;
+      goto fail;
+    }
+  n = json.length;
+  t (xcalloc(rc, max(n, 1), libqwaitclient_qwait_user_t)); /* `max(n, 1)`: do not return `NULL`. */
+  for (i = 0; i < n; i++)
+    t (libqwaitclient_qwait_user_parse(rc + i, json.data.array + i));
+  
+  return destroy(&mesg, &json), free(partial_name_uri), *user_count = n, rc;
+ fail:
+  return protocol_failure(sock, &mesg, &json), free(partial_name_uri), *user_count = 0, NULL;
+}
+
+
+/**
  * Get complete information about a user
  * 
  * @param   sock     The socket used to remote communication
@@ -256,6 +409,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 #undef _user_
 #undef _queue_
 #undef _json_
+#undef _auth_
 #undef _mesg_
 #undef _sock_
 
@@ -264,9 +418,10 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
     
      join queue:                PUT /api/queue/<queue.name>/position/<user.user_id>
     leave queue:             DELETE /api/queue/<queue.name>/position/<user.user_id>
-    change comment:             PUT /api/queue/<queue.name>/position/<user.user_id>/comment
+    
+    change queue comment:       PUT /api/queue/<queue.name>/position/<user.user_id>/comment
                                     {"comment":<comment>}
-    change location:            PUT /api/queue/<queue.name>/position/<user.user_id>/location
+    change queue location:      PUT /api/queue/<queue.name>/position/<user.user_id>/location
                                     {"location":<location>}
     
     delete queue:            DELETE /api/queue/<queue.name>
@@ -286,6 +441,11 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
     remove queue moderator:  DELETE /api/queue/<queue.name>/moderator/<user.user_id>
        add queue owner:         PUT /api/queue/<queue.name>/owner/<user.user_id>
     remove queue owner:      DELETE /api/queue/<queue.name>/owner/<user.user_id>
+
+         add to admins:         PUT /api/user/<user.user_id>/role/admin
+                                    true
+    remove from admins:         PUT /api/user/<user.user_id>/role/admin
+                                    false
 
 queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
 
