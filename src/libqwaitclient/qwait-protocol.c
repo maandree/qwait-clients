@@ -288,5 +288,58 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
     remove queue owner:      DELETE /api/queue/<queue.name>/owner/<user.user_id>
 
 queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
+
+
+    Login information (partial content):  GET /
+    
+    If anonymous:
+    
+    <script type="text/javascript">
+    \/\* <![CDATA[ \*\/
+    angular.module('request', []).factory('requestInfo', [function () {
+      return {
+        currentUser: {
+	  name: null,
+	  readableName: null,
+	  admin: false,
+	  roles: ['ROLE_ANONYMOUS'],
+	  anonymous: true
+	},
+	hostname: <reverse_dns (string)>,
+	product: {
+	  name: 'QWait',
+	  version: '1.1.16'
+	}
+      };
+    }]);
+    \/\* ]]> \*\/
+    </script>
+    
+    If not anonymous:
+    
+    <script type="text/javascript">
+    \/\* <![CDATA[ \*\/
+    angular.module('request', []).factory('requestInfo', [function () {
+      return {
+        currentUser: {
+	  name: <user_id (string)>,
+	  readableName: <real_name (string)>,
+	  admin: <admin (boolean)>,
+	  roles: <roles (string array)>,
+	  anonymous: false
+	},
+	hostname: <reverse_dns (string)>,
+	product: {
+	  name: 'QWait',
+	  version: '1.1.16'
+	}
+      };
+    }]);
+    \/\* ]]> \*\/
+    </script>
+    
+    (product is for version 1.1.16 of QWait)
+    (strings are encoded with ' rather than ")
+    
  */
 
