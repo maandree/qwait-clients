@@ -256,6 +256,8 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
   
   /* 2001-01-01 is an awesome epoch: trivial day of the week calculation. */
   time->wday = (unsigned)(s % 7);
+  /* Side note: 0001-01-01 was a Monday, we know this because 2001-01-01
+                was a Monday and 365,2425 ⋅ 2000 ≡ 0 (Mod 7). */
   
   /* And simple fast year calculation. */
   time->year += (signed)(s / 146097) * 400, s %= 146097;
