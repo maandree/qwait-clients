@@ -106,7 +106,7 @@ static int print_position(libqwaitclient_qwait_position_t* restrict position, in
 	      position->enter_time_mseconds);
     }
   
-#define S(X)  position->X, (int)(max_##X - ustrlen(position->X)), ""
+#define S(X)  position->X ? position->X : "", (int)(max_##X - (position->X ? ustrlen(position->X) : 0)), ""
   
   /* Print entry. */
   loc_colour = get_location_colour(position->location);
@@ -161,7 +161,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
   /* Get coloumn sizes. */
   for (i = 0, n = queue.position_count; i < n; i++)
     {
-#define S(X)  len = ustrlen(position.X), max_##X = len < max_##X ? max_##X : len
+#define S(X)  position.X ? (len = ustrlen(position.X), max_##X = len < max_##X ? max_##X : len) : 0
       
       libqwaitclient_qwait_position_t position = queue.positions[i];
       size_t len;
@@ -183,7 +183,7 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
       int is_help = 0;
       
       /* Is this a request for help. */
-      m = strlen(position.comment);
+      m = position.comment ? strlen(position.comment) : 0;
       for (j = k = 0; (k < 6) && (j < m); j++)
 	if ((k == 0) || (comment_[k - 1] != position.comment[j]))
 	  comment_[k++] = position.comment[j];

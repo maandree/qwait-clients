@@ -82,9 +82,11 @@ int print_user_information(libqwaitclient_http_socket_t* restrict sock, const ch
     goto done;
   for (i = 0, n = user.queue_count; i < n; i++)
     {
-      max_queue    = max(strlen(user.queues[i]),             max_queue);
-      max_location = max(strlen(user.positions[i].location), max_location);
-      max_comment  = max(strlen(user.positions[i].comment),  max_comment);
+#define S(m, s)  (s ? (m = max(strlen(s), m)) : 0)
+      S(max_queue,    user.queues[i]);
+      S(max_location, user.positions[i].location);
+      S(max_comment,  user.positions[i].comment);
+#undef S
     }
   for (i = 0, n = user.queue_count; i < n; i++)
     {
@@ -114,11 +116,13 @@ int print_user_information(libqwaitclient_http_socket_t* restrict sock, const ch
 	}
       
       /* Print entry. */
+#define S(s, m)  s ? s : "", s ? (m - strlen(s)) : m, ""
       printf("%s:%*.s    %s%*.s    %s%*.s    %s\n",
-	     user.queues[i], max_queue    - strlen(user.queues[i]), "",
-	     pos.location,   max_location - strlen(pos.location),   "",
-	     pos.comment,    max_comment  - strlen(pos.comment),    "",
+	     S(user.queues[i], max_queue),
+	     S(pos.location,   max_location),
+	     S(pos.comment,    max_comment),
 	     str_time);
+#undef S
     }
   
  done:

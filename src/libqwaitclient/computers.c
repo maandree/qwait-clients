@@ -101,6 +101,9 @@ int libqwaitclient_computers_get_room(const char* restrict location)
 #define test2(A, B)        (test1(A) && test1(B))
 #define test3(A, B, C)     (test1(A) && test1(B) && test1(C))
 #define test4(A, B, C, D)  (test1(A) && test1(B) && test1(C) && test1(D))
+    
+  if (location == NULL)
+    return LIBQWAITCLIENT_COMPUTERS_UKNOWN;
   
   if (test1("cerise"))                      return LIBQWAITCLIENT_COMPUTERS_CERISE;
   if (test3("blå", "blÅ", "blue"))          return LIBQWAITCLIENT_COMPUTERS_BLUE;
