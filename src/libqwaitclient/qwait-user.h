@@ -54,9 +54,9 @@ typedef struct libqwaitclient_qwait_user
   /**
    * List of roles the user has
    * 
-   * TODO: what roles exist and what do they entail
-   *       "user" and "admin" exists, but it seems that
-   *       "admin" is used iff `admin` and everyone has user
+   * Possible roles:
+   * - user:   Included for everyone(?)
+   * - admin:  Included for and only for those with `admin` set
    */
   char** roles;
   
