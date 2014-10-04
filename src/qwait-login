@@ -26,7 +26,7 @@
 
 
 # Acquire cookie.
-page="$(curl ${CURL_FLAGS} -s -i 'http://qwait.csc.kth.se/login')"
+page="$(curl ${CURL_FLAGS} -s -i 'http://qwait.csc.kth.se/login?target=http://qwait.csc.kth.se/')"
 cookie="$(echo "${page}" | grep '^Set-Cookie: JSESSIONID=' | sed -e 's/^Set-Cookie: //' | cut -d \; -f 1)"
 if [ -z "${cookie}" ]; then
     exit 1
@@ -120,9 +120,8 @@ get_location ()
 }
 
 # Perform authentiation.
-while echo "${page} " | grep '^Location: ' 2>/dev/null >/dev/null; do
-    page="$(curl ${CURL_FLAGS} -s -i -b "${cookie}" "$(echo "${page}" | get_location)")"
-done
+curl ${CURL_FLAGS_} -L -s -i -b "${cookie}" "$(echo "${page}" | get_location)" >/dev/null
+# FIXME why does this only work if a proxy is used?
 
 # Print cookies.
 echo "${cookie}"
