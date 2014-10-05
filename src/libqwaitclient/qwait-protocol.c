@@ -34,8 +34,9 @@
 #define _user_   libqwaitclient_qwait_user_t*     restrict user
 
 
-#define t(expression)    if (expression)  goto fail
-#define mkstr(buf, ...)  (asprintf(&(buf), __VA_ARGS__) < 0)
+#define t(expression)     if (expression)  goto fail
+#define mkstr_(buf, ...)  asprintf(&(buf), __VA_ARGS__)
+#define mkstr(buf, ...)   (mkstr_(buf, __VA_ARGS__) < 0)
 
 
 
@@ -401,8 +402,286 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 }
 
 
+/**
+ * Send a command that does not except a response with content
+ * 
+ * @param   sock  The socket used to remote communication
+ * @param   auth  User authentication
+ * @param   json  JSON message to include, may be `NULL`
+ * @param   head  Head of the message to send
+ * @return          Zero on success, -1 on error
+ */
+static int send_command(_sock_, const _auth_, const _json_, char* restrict head)
+{
+  libqwaitclient_http_message_t mesg;
+  
+  if (head == NULL)
+    return -1; /* The functions beneath does not need to care about error handling. */
+  
+  initialise(&mesg, NULL);
+  mesg.top = head;
+  
+  t (libqwaitclient_auth_sign(auth, &mesg));
+  t (protocol_query(sock, &mesg, NULL, json));
+  
+  return destroy(&mesg, NULL), 0;
+ fail:
+  return protocol_failure(sock, &mesg, NULL), -1;
+}
+
+
+static char* make_queue_name(const char* restrict queue_title) /* TODO */
+{
+  (void) queue_title;
+  return NULL;
+
+/*
+queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
+*/
+}
+
+static int make_json_object(_json_, const char* restrict name, const char* restrict value) /* TODO */
+{
+  (void) json;
+  (void) name;
+  (void) value;
+  return -1;
+}
+
+
+/**
+ * Hide or unhide a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   hidden      Whether the queue should be hidden
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_hidden(_sock_, const _auth_, const char* restrict queue_name, int hidden)
+{
+  libqwaitclient_json_t json;
+  char* head;
+  json.length = 0;
+  json.type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN;
+  json.data.boolean = hidden;
+  mkstr_(head, "PUT /api/queue/%s/hidden HTTP/1.1", queue_name);
+  return send_command(sock, auth, &json, head);
+}
+
+
+/**
+ * Lock or unlock a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   hidden      Whether the queue should be locked
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_locked(_sock_, const _auth_, const char* restrict queue_name, int locked)
+{
+  libqwaitclient_json_t json;
+  char* head;
+  json.length = 0;
+  json.type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN;
+  json.data.boolean = locked;
+  mkstr_(head, "PUT /api/queue/%s/locked HTTP/1.1", queue_name);
+  return send_command(sock, auth, &json, head);
+}
+
+
+/**
+ * Remove all entries in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_clear_queue(_sock_, const _auth_, const char* restrict queue_name)
+{
+  char* head;
+  mkstr_(head, "POST /api/queue/%s/clear HTTP/1.1", queue_name);
+  return send_command(sock, auth, NULL, head);
+}
+
+
+/**
+ * Delete a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_delete_queue(_sock_, const _auth_, const char* restrict queue_name)
+{
+  char* head;
+  mkstr_(head, "DELETE /api/queue/%s HTTP/1.1", queue_name);
+  return send_command(sock, auth, NULL, head);
+}
+
+
+/**
+ * Create a new queue
+ * 
+ * @param   sock         The socket used to remote communication
+ * @param   auth         User authentication
+ * @param   queue_title  The title of the new queue
+ * @return               Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_create_queue(_sock_, const _auth_, const char* restrict queue_title)
+{
+  libqwaitclient_json_t json;
+  char* queue_name = NULL;
+  int saved_errno, r = -1;
+  char* head;
+  t (make_json_object(&json, "title", queue_title));
+  t (!(queue_name = make_queue_name(queue_title)));
+  mkstr_(head, "PUT /api/queue/%s HTTP/1.1", queue_name);
+  r = send_command(sock, auth, &json, head);
+ fail:
+  saved_errno = errno;
+  free(queue_name);
+  libqwaitclient_json_destroy(&json);
+  return errno = saved_errno, r;
+}
+
+
+/**
+ * Join or leave a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the user that should join or leave the queue
+ * @param   wait        Whether the user should join the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait(_sock_, const _auth_, const char* restrict queue_name,
+					const char* restrict user_id, int wait)
+{
+  char* head;
+  mkstr_(head, "%s /api/queue/%s/position/%s HTTP/1.1", wait ? "PUT" : "DELETE", queue_name, user_id);
+  return send_command(sock, auth, NULL, head);
+}
+
+
+/**
+ * Set or change the user's comment in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   comment     The comment for the entry
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait_comment(_sock_, const _auth_, const char* restrict queue_name,
+						const char* restrict user_id, const char* restrict comment)
+{
+  char* head;
+  libqwaitclient_json_t json;
+  int saved_errno, r = -1;
+  t (make_json_object(&json, "comment", comment));
+  mkstr_(head, "PUT /api/queue/%s/position/%s/comment HTTP/1.1", queue_name, user_id);
+  r = send_command(sock, auth, &json, head);
+ fail:
+  saved_errno = errno;
+  libqwaitclient_json_destroy(&json);
+  return errno = saved_errno, r;
+}
+
+
+/**
+ * Set or change the user's announced location in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   location    The announced location for the entry
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait_location(_sock_, const _auth_, const char* restrict queue_name,
+						 const char* restrict user_id, const char* restrict location)
+{
+  char* head;
+  libqwaitclient_json_t json;
+  int saved_errno, r = -1;
+  t (make_json_object(&json, "location", location));
+  mkstr_(head, "PUT /api/queue/%s/position/%s/location HTTP/1.1", queue_name, user_id);
+  r = send_command(sock, auth, &json, head);
+ fail:
+  saved_errno = errno;
+  libqwaitclient_json_destroy(&json);
+  return errno = saved_errno, r;
+}
+
+
+/**
+ * Add a user as a moderator of a queue or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   moderator   Whether the user should be a moderator of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_moderator(_sock_, const _auth_, const char* restrict queue_name,
+					     const char* restrict user_id, int moderator)
+{
+  char* head;
+  mkstr_(head, "%s /api/queue/%s/moderator/%s HTTP/1.1", moderator ? "PUT" : "DELETE", queue_name, user_id);
+  return send_command(sock, auth, NULL, head);
+}
+
+
+/**
+ * Add a user as an owner of a queue or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   owner       Whether the user should be an owner of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_owner(_sock_, const _auth_, const char* restrict queue_name,
+					 const char* restrict user_id, int owner)
+{
+  char* head;
+  mkstr_(head, "%s /api/queue/%s/owner/%s HTTP/1.1", owner ? "PUT" : "DELETE", queue_name, user_id);
+  return send_command(sock, auth, NULL, head);
+}
+
+
+/**
+ * Add a user as a QWait administrator or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_id     The user ID of the affected user
+ * @param   admin       Whether the user should be a QWait administrator
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_admin(_sock_, const _auth_, const char* restrict user_id, int admin)
+{
+  char* head;
+  libqwaitclient_json_t json;
+  json.length = 0;
+  json.type = LIBQWAITCLIENT_JSON_TYPE_BOOLEAN;
+  json.data.boolean = admin;
+  mkstr_(head, "PUT /api/user/%s/role/admin HTTP/1.1", user_id);
+  return send_command(sock, auth, &json, head);
+}
+
+
 
 #undef mkstr
+#undef mkstr_
 #undef t
 
 
@@ -414,42 +693,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
 #undef _sock_
 
 
-/*  Other protocol parts:
-    
-     join queue:                PUT /api/queue/<queue.name>/position/<user.user_id>
-    leave queue:             DELETE /api/queue/<queue.name>/position/<user.user_id>
-    
-    change queue comment:       PUT /api/queue/<queue.name>/position/<user.user_id>/comment
-                                    {"comment":<comment>}
-    change queue location:      PUT /api/queue/<queue.name>/position/<user.user_id>/location
-                                    {"location":<location>}
-    
-    delete queue:            DELETE /api/queue/<queue.name>
-     clear queue:              POST /api/queue/<queue.name>/clear
-    create queue:               PUT /api/queue/<queue.name>
-                                    {"title":<queue.title>}
-      hide queue:               PUT /api/queue/<queue.name>/hidden
-                                    true
-    unhide queue:               PUT /api/queue/<queue.name>/hidden
-                                    false
-      lock queue:               PUT /api/queue/<queue.name>/locked
-                                    true
-    unlock queue:               PUT /api/queue/<queue.name>/locked
-                                    false
-   
-       add queue moderator:     PUT /api/queue/<queue.name>/moderator/<user.user_id>
-    remove queue moderator:  DELETE /api/queue/<queue.name>/moderator/<user.user_id>
-       add queue owner:         PUT /api/queue/<queue.name>/owner/<user.user_id>
-    remove queue owner:      DELETE /api/queue/<queue.name>/owner/<user.user_id>
-
-         add to admins:         PUT /api/user/<user.user_id>/role/admin
-                                    true
-    remove from admins:         PUT /api/user/<user.user_id>/role/admin
-                                    false
-
-queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
-
-
+/*
     Login information (partial content):  GET /
     
     If anonymous:
@@ -499,7 +743,9 @@ queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u1
     </script>
     
     (product is for version 1.1.16 of QWait)
-    (strings are encoded with ' rather than ")
-    
+    (NB! this is data is not encoded with JSON,
+         but in a similar manner: ' is used
+	 instead of ", names in {} are not
+	 strings but identifiers.)
  */
 

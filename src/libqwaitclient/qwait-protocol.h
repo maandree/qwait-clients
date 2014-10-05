@@ -84,6 +84,7 @@ libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_users(_sock_, const _auth_
  */
 libqwaitclient_qwait_user_t* libqwaitclient_qwait_find_user(_sock_, const _auth_, const char* partial_name,
 							    size_t* restrict user_count);
+
 /**
  * Get complete information about a user
  * 
@@ -93,6 +94,134 @@ libqwaitclient_qwait_user_t* libqwaitclient_qwait_find_user(_sock_, const _auth_
  * @return           Zero on success, -1 on error
  */
 int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id);
+
+/**
+ * Hide or unhide a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   hidden      Whether the queue should be hidden
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_hidden(_sock_, const _auth_, const char* restrict queue_name, int hidden);
+
+/**
+ * Lock or unlock a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   hidden      Whether the queue should be locked
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_locked(_sock_, const _auth_, const char* restrict queue_name, int locked);
+
+/**
+ * Remove all entries in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_clear_queue(_sock_, const _auth_, const char* restrict queue_name);
+
+/**
+ * Delete a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_delete_queue(_sock_, const _auth_, const char* restrict queue_name);
+
+/**
+ * Create a new queue
+ * 
+ * @param   sock         The socket used to remote communication
+ * @param   auth         User authentication
+ * @param   queue_title  The title of the new queue
+ * @return               Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_create_queue(_sock_, const _auth_, const char* restrict queue_title);
+
+/**
+ * Join or leave a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the user that should join or leave the queue
+ * @param   wait        Whether the user should join the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait(_sock_, const _auth_, const char* restrict queue_name,
+					const char* restrict user_id, int wait);
+
+/**
+ * Set or change the user's comment in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   comment     The comment for the entry
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait_comment(_sock_, const _auth_, const char* restrict queue_name,
+						const char* restrict user_id, const char* restrict comment);
+
+/**
+ * Set or change the user's announced location in a queue
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   location    The announced location for the entry
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_wait_location(_sock_, const _auth_, const char* restrict queue_name,
+						 const char* restrict user_id, const char* restrict location);
+
+/**
+ * Add a user as a moderator of a queue or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   moderator   Whether the user should be a moderator of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_moderator(_sock_, const _auth_, const char* restrict queue_name,
+					     const char* restrict user_id, int moderator);
+
+/**
+ * Add a user as an owner of a queue or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user ID of the affected user
+ * @param   owner       Whether the user should be an owner of the queue
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_queue_owner(_sock_, const _auth_, const char* restrict queue_name,
+					 const char* restrict user_id, int owner);
+
+/**
+ * Add a user as a QWait administrator or remove said status
+ * 
+ * @param   sock        The socket used to remote communication
+ * @param   auth        User authentication
+ * @param   user_id     The user ID of the affected user
+ * @param   admin       Whether the user should be a QWait administrator
+ * @return              Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_set_admin(_sock_, const _auth_, const char* restrict user_id, int admin);
 
 
 #undef _user_
