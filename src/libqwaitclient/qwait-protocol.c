@@ -409,7 +409,7 @@ int libqwaitclient_qwait_get_user(_sock_, _user_, const char* restrict user_id)
  * @param   auth  User authentication
  * @param   json  JSON message to include, may be `NULL`
  * @param   head  Head of the message to send
- * @return          Zero on success, -1 on error
+ * @return        Zero on success, -1 on error
  */
 static int send_command(_sock_, const _auth_, const _json_, char* restrict head)
 {
@@ -430,22 +430,119 @@ static int send_command(_sock_, const _auth_, const _json_, char* restrict head)
 }
 
 
-static char* make_queue_name(const char* restrict queue_title) /* TODO */
+/**
+ * Create a suitable queue name from a queue title
+ * 
+ * @param   queue_title  The queue's title
+ * @return               The queue's name, `NULL` on error
+ */
+static char* make_queue_name(const char* restrict queue_title)
 {
-  (void) queue_title;
-  return NULL;
-
-/*
-queue.title="$(echo "${queue.name,,}" | sed -r -e 's:[ \f\n\r\t\v\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000/]+:-:g')"
-*/
+  size_t i, j, n = strlen(queue_title);
+  char* rc;
+  int c3 = 0;
+  
+  if (xmalloc(rc, n + 1, char))
+    return NULL;
+  
+#define r(a, b)  ((a <= c) && (c <= b))
+  
+  for (i = j = 0; i < n; i++)
+    {
+      unsigned char c = (unsigned char)(queue_title[i]);
+      
+      if (c3)
+	{
+	  /* Latin-1 supplement translation into lowercase ASCII */
+	  c3 = 0;
+	  if      (r(0x80, 0x86))  c = 'a';
+	  else if (c == 0x87)      c = 'c';
+	  else if (r(0x88, 0x8B))  c = 'e';
+	  else if (r(0x88, 0x8B))  c = 'e';
+	  else if (r(0x8C, 0x8F))  c = 'i';
+	  else if (c == 0x90)      c = 'd';
+	  else if (c == 0x91)      c = 'n';
+	  else if (r(0x92, 0x96))  c = 'o';
+	  else if (c == 0x98)      c = 'o';
+	  else if (r(0x99, 0x9C))  c = 'u';
+	  else if (c == 0x9D)      c = 'y';
+	  else if (c == 0x9F)      rc[j++] = 's', c = 's';
+	  else if (r(0xA0, 0xA6))  c = 'a';
+	  else if (c == 0xA7)      c = 'c';
+	  else if (r(0xA8, 0xAB))  c = 'e';
+	  else if (r(0xAC, 0xAF))  c = 'i';
+	  else if (c == 0xB0)      c = 'd';
+	  else if (c == 0xB1)      c = 'n';
+	  else if (r(0xB2, 0xB6))  c = 'o';
+	  else if (c == 0xB8)      c = 'o';
+	  else if (r(0xB9, 0xBC))  c = 'u';
+	  else if (c == 0xBD)      c = 'y';
+	  else if (c == 0xBF)      c = 'y';
+	  else
+	    c = '-';
+	}
+      else if (r('A', 'Z'))  c = (unsigned char)(c - 'A' + 'a');
+      else if (r('a', 'z'))  ;
+      else if (r('0', '9'))  ;
+      else if (c == 0xC3)
+	{
+	  c3 = 1;
+	  continue;
+	}
+      else
+	c = '-';
+      
+      if ((j > 0) && (c == '-') && (rc[j - 1] == '-'))
+	continue;
+      rc[j++] = (char)c;
+    }
+  
+#undef r
+  
+  rc[j++] = '\0';
+  return rc;
 }
 
-static int make_json_object(_json_, const char* restrict name, const char* restrict value) /* TODO */
+
+/**
+ * Create a JSON object that maps exactly one string to another string.
+ * 
+ * @param   json   Output parameter for the JSON object
+ * @param   name   The name of the only member in the created object
+ * @param   value  The value of the only member in the created object
+ * @return         Zero on success, -1 on error
+ */
+static int make_json_object(_json_, const char* restrict name, const char* restrict value)
 {
-  (void) json;
-  (void) name;
-  (void) value;
-  return -1;
+  /* Create a single association object. */
+  json->type = LIBQWAITCLIENT_JSON_TYPE_OBJECT;
+  json->length = 1;
+  if (xmalloc(json->data.object, 1, libqwaitclient_json_association_t))
+    return -1;
+  
+  /* In case or error we need the value's string to be NULL,
+     so an invalid pointer does not get freed. So right of
+     the bat we will set the value to by of the `null` type. */
+  json->data.object->value.data.string = NULL;
+  json->data.object->value.length = 0;
+  json->data.object->value.type = LIBQWAITCLIENT_JSON_TYPE_NULL;
+  
+  /* Set the association key. */
+  json->data.object->name_length = strlen(name);
+  if (!(json->data.object->name = strdup(name)))
+    return -1;
+  
+  /* Now, if `value` is not `NULL` we switch the value from a
+     `null`-type to a string. */
+  if (value != NULL)
+    {
+      json->data.object->value.type = LIBQWAITCLIENT_JSON_TYPE_STRING;
+      json->data.object->value.length = strlen(value);
+      if (!(json->data.object->value.data.string = strdup(value)))
+	return -1;
+    }
+  
+  return 0;
 }
 
 
