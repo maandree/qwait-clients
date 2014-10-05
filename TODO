@@ -16,3 +16,6 @@ Needs testing:
       libqwaitclient_qwait_set_queue_owner
       libqwaitclient_qwait_set_admin
 
+We need to be able get push notifications from the server,
+preferably using WebSocket.
+
