@@ -25,7 +25,7 @@
 #include <errno.h>
 
 
-#define  _this_  libqwaitclient_qwait_queue_t* restrict this
+#define _this_  libqwaitclient_qwait_queue_t* restrict this
 
 
 /**

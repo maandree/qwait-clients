@@ -106,7 +106,7 @@ typedef struct libqwaitclient_qwait_user
 
 
 
-#define  _this_  libqwaitclient_qwait_user_t* restrict this
+#define _this_  libqwaitclient_qwait_user_t* restrict this
 
 
 /**

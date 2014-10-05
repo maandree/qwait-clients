@@ -167,8 +167,8 @@ typedef struct libqwaitclient_qwait_position_time
 
 
 
-#define  _this_  libqwaitclient_qwait_position_t* restrict this
-#define  _time_  libqwaitclient_qwait_position_time_t* restrict time
+#define _this_  libqwaitclient_qwait_position_t* restrict this
+#define _time_  libqwaitclient_qwait_position_time_t* restrict time
 
 
 /**

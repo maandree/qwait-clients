@@ -189,7 +189,7 @@ typedef struct libqwaitclient_json_association
 
 
 
-#define  _this_  libqwaitclient_json_t* restrict this
+#define _this_  libqwaitclient_json_t* restrict this
 
 
 /**

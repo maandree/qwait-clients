@@ -87,7 +87,7 @@ typedef struct libqwaitclient_http_socket
 
 
 
-#define  _this_  libqwaitclient_http_socket_t* restrict this
+#define _this_  libqwaitclient_http_socket_t* restrict this
 
 
 

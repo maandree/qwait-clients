@@ -31,7 +31,7 @@
 #include <stdlib.h>
 
 
-#define  _this_  libqwaitclient_http_socket_t* restrict this
+#define _this_  libqwaitclient_http_socket_t* restrict this
 
 
 
