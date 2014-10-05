@@ -40,7 +40,11 @@
 #endif
 
 
-#define  _this_  libqwaitclient_json_t* restrict this
+#define _this_  libqwaitclient_json_t* restrict this
+
+
+#define t(expression)    if (expression)  goto fail
+
 
 
 /**
@@ -1004,6 +1008,174 @@ void libqwaitclient_json_dump(const _this_, FILE* output)
   fprintf(output, "\n");
 }
 
+
+/**
+ * Encode a character with \u-notations
+ * 
+ * @param   string  The string from which to read the character, it is not NUL-terminated
+ * @param   length  The length of `string`
+ * @param   offset  Where in `string` the character being, will be updated with where the
+ *                  in `string` the character ends
+ * @return          Statically allocated NUL-terminated string of the encoding of the character
+ */
+static const char* libqwaitclient_json_encode_character(const char* restrict string, size_t length,
+							size_t* restrict offset)
+{
+  static __thread char buf[13];
+  /* There are three candidate for longest encoding possible:
+   * 7:   Maximum allowed character byte-length for a character beyond plane 16 + NUL-termination.
+   * 9:   All bits set in the first byte of a character beyond plane 16 + NUL-termination. (Invalid encoding.)
+   * 13:  Encoding of two characters in a surrogate + NUL-termination.
+   * Obviously 13 > 9 > 7, so we choose 13 over 9 and 7. */
+  uint32_t utf32 = 0;
+  size_t i = *offset, n = 0, origin = *offset;
+  
+  /* Read one character. */
+  while (i < length)
+    {
+      unsigned char c = (unsigned char)(string[i++]);
+      
+      if (n)
+	{
+	  /* Check that a new character do not start here. */
+	  if ((c & 0xC0) != 0x80)
+	    {
+	      i--;
+	      break;
+	    }
+	  
+	  /* Continued reading of multibyte-character. */
+	  n--;
+	  utf32 <<= 6;
+	  utf32 |= (uint32_t)(c & 0x7F);
+	  
+	  /* Did the multibyte-charcter end here? */
+	  if (!n)
+	    break;
+	  
+	  continue;
+	}
+      
+      /* Single byte-character. */
+      if ((c & 0x80) == 0)
+	{
+	  utf32 = (uint32_t)c;
+	  break;
+	}
+      
+      /* Non-first byte in multibyte-character at being of character. */
+      if ((c & 0xC0) == 0x80)
+	{
+	  /* Treat as a single byte character with the high bit set. */
+	  utf32 = (uint32_t)c;
+	  break;
+	}
+      
+      /* First byte in multibyte-character,
+	 get length and most significant bits. */
+      while ((c & 0x80))
+	c = (unsigned char)(c << 1), n++;
+      utf32 = (uint32_t)(c >> n);
+      n--;
+    }
+  
+  /* Report number of read bytes. */
+  *offset = i;
+  
+  /* Get encoding. */
+  if (utf32 >= 0x110000UL)
+    {
+      /* Cannot encode in UTF-16, fallback to verbatim
+         copy in, hopefully proper, UTF-8. */
+      memcpy(buf, string + origin, (i - origin) * sizeof(char));
+      buf[i - origin] = '\0';
+    }
+  else if (utf32 <= 0xFFFFUL)
+    {
+      /* BMP, requires one UTF-16 word. */
+      sprintf(buf, "\\u%04" PRIx32, utf32);
+    }
+  else
+    {
+      /* Plane 1 to plane 16, requires a surrogate pair for UTF-16 encoding. */
+      uint32_t p = utf32 - (uint32_t)0x100000UL;
+      uint16_t utf16_lead  = (uint16_t)(((p >> 10) & 0x3FFUL) | 0xD800UL);
+      uint16_t utf16_trail = (uint16_t)(((p >>  0) & 0x3FFUL) | 0xDC00UL);
+      sprintf(buf, "\\u%04" PRIx16, "\\u%04" PRIx16, utf16_lead, utf16_trail);
+    }
+  
+  return buf;
+}
+
+
+/**
+ * Serialise a JSON string
+ * 
+ * @param   string         The JSON string to serialise, it is not NUL-terminated
+ * @param   string_length  The length of `string`
+ * @param   data           Output parameter for the serialised JSON string
+ * @param   length         The length of `*code`
+ * @return                 Zero on success, -1 on error
+ */
+static int libqwaitclient_json_compose_string(const char* restrict string, size_t string_length,
+					      char** restrict data, size_t* restrict length)
+{
+  size_t i, require = 2, offset; /* 2: surrounding quotes */
+  char* old = NULL;
+  
+  /* Predict string encoding length. */
+  for (i = 0; i < string_length; i++)
+    {
+      char c = string[i];
+      if (strchr("\"\\\b\f\n\r\t", c))
+	require += 2;
+      else if ((' ' <= (unsigned char)c) && ((unsigned char)c < 128))
+	require += 1;
+      else
+	require += strlen(libqwaitclient_json_encode_character(string, string_length, &i));
+    }
+  
+  /* Update *data and *length */
+  offset = *length;
+  *length += require;
+  old = *data;
+  if (xrealloc(*data, *length, char))
+    goto fail;
+  old = NULL;
+  
+  /* Compose string.  */
+  (*data)[offset++] = '\"';
+  for (i = 0; i < string_length; i++)
+    {
+      char c = string[i];
+      if      (c == '\"')  (*data)[offset++] = '\\', (*data)[offset++] = '\"';
+      else if (c == '\\')  (*data)[offset++] = '\\', (*data)[offset++] = '\\';
+      else if (c == '\b')  (*data)[offset++] = '\\', (*data)[offset++] = 'b';
+      else if (c == '\f')  (*data)[offset++] = '\\', (*data)[offset++] = 'f';
+      else if (c == '\n')  (*data)[offset++] = '\\', (*data)[offset++] = 'n';
+      else if (c == '\r')  (*data)[offset++] = '\\', (*data)[offset++] = 'r';
+      else if (c == '\t')  (*data)[offset++] = '\\', (*data)[offset++] = 't';
+      else if ((' ' <= (unsigned char)c) && ((unsigned char)c < 128))
+	(*data)[offset++] = c;
+      else
+	{
+	  const char* encoding = libqwaitclient_json_encode_character(string, string_length, &i);
+	  size_t len = strlen(encoding);
+	  memcpy(*data + len, encoding, len * sizeof(char));
+	  offset += len;
+	}
+    }
+  (*data)[offset++] = '\"';
+  
+  return 0;
+  
+ fail:
+  if (old)
+    *data = old;
+  return -1;
+}
+
+
 /**
  * Serialise a JSON structure
  * 
@@ -1016,14 +1188,96 @@ void libqwaitclient_json_dump(const _this_, FILE* output)
  */
 int libqwaitclient_json_compose(const _this_, char** restrict data, size_t* restrict length)
 {
-  (void) this;
-  (void) data;
-  (void) length;
-  return errno = ENOPROTOOPT, -1; /* TODO */
+  size_t i, n = this->length, len;
+  ssize_t m = -1;
+  int r;
+  char* old = NULL;
+  
+#define update(plus)  (len = *length, *length += (plus), old = *data,	\
+		       (xrealloc(*data, *length + 1, char) ? 1 : (old = NULL, 0)))
+#define extend(...)   (sprintf(*data + len, __VA_ARGS__) < 0 ? -1 : 0)
+  
+  switch (this->type)
+    {
+    case LIBQWAITCLIENT_JSON_TYPE_INTEGER:
+      r = snprintf(NULL, 0, "%" PRIi64 "%zn", this->data.integer, &m);
+      t ((r < 0) || (m < 0));
+      t (update((size_t)m));
+      return extend("%" PRIi64, this->data.integer);
+      
+    case LIBQWAITCLIENT_JSON_TYPE_LARGE_INTEGER:
+      t (update(strlen(this->data.large_integer)));
+      return extend("%s", this->data.large_integer);
+      
+    case LIBQWAITCLIENT_JSON_TYPE_FLOATING:
+      r = snprintf(NULL, 0, "%lf" "%zn", this->data.floating, &m);
+      t ((r < 0) || (m < 0));
+      t (update((size_t)m));
+      return extend("%lf", this->data.floating);
+      
+    case LIBQWAITCLIENT_JSON_TYPE_STRING:
+      return (libqwaitclient_json_compose_string(this->data.string,
+						 this->length,
+						 data, length));
+      
+    case LIBQWAITCLIENT_JSON_TYPE_BOOLEAN:
+      t (update(this->data.boolean ? 4 : 5));
+      return extend(this->data.boolean ? "true" : "false");
+      
+    case LIBQWAITCLIENT_JSON_TYPE_ARRAY:
+      t (update(1));
+      t (extend("["));
+      for (i = 0; i < n; i++)
+	{
+	  t ((i > 0) && update(1));
+	  t ((i > 0) && extend(","));
+	  t (libqwaitclient_json_compose(this->data.array + i, data, length));
+	}
+      t (update(1));
+      return extend("]");
+      
+    case LIBQWAITCLIENT_JSON_TYPE_OBJECT:
+      t (update(1));
+      t (extend("{"));
+      for (i = 0; i < n; i++)
+	{
+	  t ((i > 0) && update(1));
+	  t ((i > 0) && extend(","));
+	  t (libqwaitclient_json_compose_string(this->data.object[i].name,
+						this->data.object[i].name_length,
+						data, length));
+	  t ((i > 0) && update(1));
+	  t ((i > 0) && extend(":"));
+	  t (libqwaitclient_json_compose(&(this->data.object[i].value), data, length));
+	}
+      t (update(1));
+      return extend("}");
+      
+    case LIBQWAITCLIENT_JSON_TYPE_NULL:
+      t (update(4));
+      return extend("null");
+      
+    default:
+      abort();
+      break;
+    }
+  
+#undef extend
+#undef update
+  
+  return 0;
+ fail:
+  if (old)
+    *data = old;
+  return -1;
 }
 
 
+
+#undef t
+
 #undef _this_
+
 #undef D
 #if defined(DEBUG) && defined(__GNUC__)
 # pragma GCC diagnostic pop
