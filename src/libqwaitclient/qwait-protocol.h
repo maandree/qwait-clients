@@ -112,7 +112,7 @@ int libqwaitclient_qwait_set_queue_hidden(_sock_, const _auth_, const char* rest
  * @param   sock        The socket used to remote communication
  * @param   auth        User authentication
  * @param   queue_name  The name of the queue
- * @param   hidden      Whether the queue should be locked
+ * @param   locked      Whether the queue should be locked
  * @return              Zero on success, -1 on error
  */
 int libqwaitclient_qwait_set_queue_locked(_sock_, const _auth_, const char* restrict queue_name, int locked);
