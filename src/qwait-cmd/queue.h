@@ -48,7 +48,6 @@ int print_queue_position(libqwaitclient_http_socket_t* restrict sock,
  * 
  * @param   sock        A socket that is connected to the qwait server
  * @param   queue_name  The name of the queue
- * @param   user_id     The user's ID
  * @param   locked      Whether the queue should be locked
  * @return              Zero on success, 1 if not found, -1 on error
  */
@@ -59,11 +58,37 @@ int queue_set_lock(libqwaitclient_http_socket_t* restrict sock, const char* rest
  * 
  * @param   sock        A socket that is connected to the qwait server
  * @param   queue_name  The name of the queue
- * @param   user_id     The user's ID
  * @param   hidden      Whether the queue should be hidden
  * @return              Zero on success, 1 if not found, -1 on error
  */
 int queue_set_hide(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name, int hidden);
+
+/**
+ * Remove all entries in a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_clear(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name);
+
+/**
+ * Remove a queue from existance
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_delete(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name);
+
+/**
+ * Put a queue into existance
+ * 
+ * @param   sock         A socket that is connected to the qwait server
+ * @param   queue_title  The title of the queue
+ * @return               Zero on success, 1 if not found, -1 on error
+ */
+int queue_create(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_title);
 
 
 #endif

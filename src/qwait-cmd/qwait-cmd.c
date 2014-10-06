@@ -59,6 +59,9 @@ int main(int argc_, char** argv_)
   int action_find_user = 0;
   int action_lock_queue = 0;
   int action_hide_queue = 0;
+  int action_clear_queue = 0;
+  int action_delete_queue = 0;
+  int action_create_queue = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -100,10 +103,13 @@ int main(int argc_, char** argv_)
   else if (argeq2("list", "administrators", 2))                         action_list_admins = 1;
   else if (argeq2("list", "users", 2))                                  action_list_users = 1;
   else if (argeq2("find", "user", 3))                                   action_find_user = 1;
-  else if (argeq1("lock", 2))                                           action_lock_queue = 1;
-  else if (argeq1("unlock", 2))                                         action_lock_queue = -1;
-  else if (argeq1("hide", 2))                                           action_hide_queue = 1;
-  else if (argeq1("unhide", 2))                                         action_hide_queue = -1;
+  else if (argeq1("lock", 2))                                           action_lock_queue = 1; /* XXX test */
+  else if (argeq1("unlock", 2))                                         action_lock_queue = -1; /* XXX test */
+  else if (argeq1("hide", 2))                                           action_hide_queue = 1; /* XXX test */
+  else if (argeq1("unhide", 2))                                         action_hide_queue = -1; /* XXX test */
+  else if (argeq1("clear", 2))                                          action_clear_queue = 1; /* XXX test */
+  else if (argeq1("delete", 2))                                         action_delete_queue = 1; /* XXX test */
+  else if (argeq1("create", 2))                                         action_create_queue = 1; /* XXX test */
   else
     goto invalid_command;
   
@@ -142,8 +148,11 @@ int main(int argc_, char** argv_)
   ta (action_list_admins,    print_users,            &sock, QWAIT_CMD_USERS_ADMINS);
   ta (action_list_users,     print_users,            &sock, QWAIT_CMD_USERS_ALL);
   ta (action_find_user,      print_users_by_name,    &sock, nonopts[2]);
-  ta (action_lock_queue,     queue_set_lock,         &sock, nonopts[1], action_lock_queue > 0); /* XXX test */
-  ta (action_hide_queue,     queue_set_hide,         &sock, nonopts[1], action_hide_queue > 0); /* XXX test */
+  ta (action_lock_queue,     queue_set_lock,         &sock, nonopts[1], action_lock_queue > 0);
+  ta (action_hide_queue,     queue_set_hide,         &sock, nonopts[1], action_hide_queue > 0);
+  ta (action_clear_queue,    queue_clear,            &sock, nonopts[1]);
+  ta (action_delete_queue,   queue_delete,           &sock, nonopts[1]);
+  ta (action_create_queue,   queue_create,           &sock, nonopts[1]);
   if (r >= 0)
     rc = r;
   

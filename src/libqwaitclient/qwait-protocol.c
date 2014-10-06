@@ -170,7 +170,7 @@ static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* r
  * @return          Corresponding URI-escaped string without
  *                  unnecessarily escaped characters, `NULL` on error
  */
-static char* uri_encode(const char* restrict string)
+static char* uri_encode(const char* restrict string) /* TODO test */
 {
   char* rc;
   size_t i, j, n;
@@ -437,7 +437,7 @@ static int send_command(_sock_, const _auth_, const _json_, char* restrict head)
  * @param   queue_title  The queue's title
  * @return               The queue's name, `NULL` on error
  */
-static char* make_queue_name(const char* restrict queue_title)
+static char* make_queue_name(const char* restrict queue_title) /* TODO test */
 {
   size_t i, j, n = strlen(queue_title);
   char* rc;
