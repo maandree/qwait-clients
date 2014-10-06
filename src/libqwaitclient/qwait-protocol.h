@@ -22,16 +22,18 @@
 #include "http-socket.h"
 #include "qwait-queue.h"
 #include "qwait-user.h"
+#include "login-information.h"
 #include "authentication.h"
 
 #define _GNU_SOURCE
 #include <stddef.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t*    restrict sock
-#define _auth_   libqwaitclient_authentication_t* restrict auth
-#define _queue_  libqwaitclient_qwait_queue_t*    restrict queue
-#define _user_   libqwaitclient_qwait_user_t*     restrict user
+#define _sock_   libqwaitclient_http_socket_t*       restrict sock
+#define _auth_   libqwaitclient_authentication_t*    restrict auth
+#define _queue_  libqwaitclient_qwait_queue_t*       restrict queue
+#define _user_   libqwaitclient_qwait_user_t*        restrict user
+#define _login_  libqwaitclient_login_information_t* restrict login
 
 
 /**
@@ -223,7 +225,18 @@ int libqwaitclient_qwait_set_queue_owner(_sock_, const _auth_, const char* restr
  */
 int libqwaitclient_qwait_set_admin(_sock_, const _auth_, const char* restrict user_id, int admin);
 
+/**
+ * Get login information
+ * 
+ * @param   sock   The socket used to remote communication
+ * @param   auth   User authentication, may be `NULL`
+ * @param   login  Output paramter for the login information
+ * @return         Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_get_login_information(_sock_, const _auth_, _login_);
 
+
+#undef _login_
 #undef _user_
 #undef _queue_
 #undef _auth_

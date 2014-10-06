@@ -26,12 +26,13 @@
 #include <stdlib.h>
 
 
-#define _sock_   libqwaitclient_http_socket_t*    restrict sock
-#define _mesg_   libqwaitclient_http_message_t*   restrict mesg
-#define _auth_   libqwaitclient_authentication_t* restrict auth
-#define _json_   libqwaitclient_json_t*           restrict json
-#define _queue_  libqwaitclient_qwait_queue_t*    restrict queue
-#define _user_   libqwaitclient_qwait_user_t*     restrict user
+#define _sock_   libqwaitclient_http_socket_t*       restrict sock
+#define _mesg_   libqwaitclient_http_message_t*      restrict mesg
+#define _auth_   libqwaitclient_authentication_t*    restrict auth
+#define _json_   libqwaitclient_json_t*              restrict json
+#define _queue_  libqwaitclient_qwait_queue_t*       restrict queue
+#define _user_   libqwaitclient_qwait_user_t*        restrict user
+#define _login_  libqwaitclient_login_information_t* restrict login
 
 
 #define t(expression)     if (expression)  goto fail
@@ -776,73 +777,43 @@ int libqwaitclient_qwait_set_admin(_sock_, const _auth_, const char* restrict us
 }
 
 
+/**
+ * Get login information
+ * 
+ * @param   sock   The socket used to remote communication
+ * @param   auth   User authentication, may be `NULL`
+ * @param   login  Output paramter for the login information
+ * @return         Zero on success, -1 on error
+ */
+int libqwaitclient_qwait_get_login_information(_sock_, const _auth_, _login_)
+{
+  libqwaitclient_http_message_t mesg;
+  
+  initialise(&mesg, NULL);
+  libqwaitclient_login_information_initialise(login);
+  
+  t (libqwaitclient_auth_sign(auth, &mesg));
+  t (mkstr(mesg.top, "GET / HTTP/1.1"));
+  t (protocol_query(sock, &mesg, NULL, NULL));
+  t (libqwaitclient_login_information_parse(login, mesg.content, mesg.content_size));
+  
+  return destroy(&mesg, NULL), 0;
+ fail:
+  return protocol_failure(sock, &mesg, NULL), -1;
+}
+
+
 
 #undef mkstr
 #undef mkstr_
 #undef t
 
 
+#undef _login_
 #undef _user_
 #undef _queue_
 #undef _json_
 #undef _auth_
 #undef _mesg_
 #undef _sock_
-
-
-/*
-    Login information (partial content):  GET /
-    
-    If anonymous:
-    
-    <script type="text/javascript">
-    \/\* <![CDATA[ \*\/
-    angular.module('request', []).factory('requestInfo', [function () {
-      return {
-        currentUser: {
-	  name: null,
-	  readableName: null,
-	  admin: false,
-	  roles: ['ROLE_ANONYMOUS'],
-	  anonymous: true
-	},
-	hostname: <reverse_dns (string)>,
-	product: {
-	  name: 'QWait',
-	  version: '1.1.16'
-	}
-      };
-    }]);
-    \/\* ]]> \*\/
-    </script>
-    
-    If not anonymous:
-    
-    <script type="text/javascript">
-    \/\* <![CDATA[ \*\/
-    angular.module('request', []).factory('requestInfo', [function () {
-      return {
-        currentUser: {
-	  name: <user_id (string)>,
-	  readableName: <real_name (string)>,
-	  admin: <admin (boolean)>,
-	  roles: <roles (string array)>,
-	  anonymous: false
-	},
-	hostname: <reverse_dns (string)>,
-	product: {
-	  name: 'QWait',
-	  version: '1.1.16'
-	}
-      };
-    }]);
-    \/\* ]]> \*\/
-    </script>
-    
-    (product is for version 1.1.16 of QWait)
-    (NB! this is data is not encoded with JSON,
-         but in a similar manner: ' is used
-	 instead of ", names in {} are not
-	 strings but identifiers.)
- */
 

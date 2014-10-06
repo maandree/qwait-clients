@@ -15,7 +15,12 @@ Needs testing:
       libqwaitclient_qwait_set_queue_moderator
       libqwaitclient_qwait_set_queue_owner
       libqwaitclient_qwait_set_admin
+      libqwaitclient_qwait_get_login_information
 
 We need to be able get push notifications from the server,
 preferably using WebSocket.
+
+Is it possible to utilise the user's Kerberos-tokens
+to avoid asking for username (okay, we could as the
+OS for the username) and password?
 

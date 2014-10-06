@@ -57,7 +57,7 @@ LD_FLAGS = $(WARN) $(OPTIMISE) -std=$(STD) $(LDFLAGS)
 LIBQWAITCLIENT_LIBFLAGS = -lrt
 LIBQWAITCLIENT_CFLAGS =
 LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol qwait-queue authentication  \
-                     qwait-user computers
+                     qwait-user computers login-information
 
 QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc

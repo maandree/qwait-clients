@@ -48,6 +48,9 @@ typedef struct libqwaitclient_qwait_user
   
   /**
    * Whether the user is anonymous
+   * 
+   * This is only set in the login information
+   * if the current user is not logged in
    */
   int anonymous;
   
@@ -55,8 +58,9 @@ typedef struct libqwaitclient_qwait_user
    * List of roles the user has
    * 
    * Possible roles:
-   * - user:   Included for everyone(?)
-   * - admin:  Included for and only for those with `admin` set
+   * - user:            Included for everyone except if "anonymous" is set
+   * - admin:           Included for and only for those with `admin` set
+   * - ROLE_ANONYMOUS:  Included for and only for those with `anonymous` set
    */
   char** roles;
   
