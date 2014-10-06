@@ -217,9 +217,12 @@ int main(int argc_, char** argv_)
   ta (action_delete_queue,   queue_delete,           &sock, nonopts[1]);
   ta (action_create_queue,   queue_create,           &sock, nonopts[1]);
   ta (action_set_admin,      user_set_admin,         &sock, nonopts[1], action_set_admin > 0);
-  ta (action_set_moderator,  user_set_moderator,     &sock, nonopts[1], nonopts[abs(action_set_moderator)], action_set_moderator > 0);
-  ta (action_set_owner,      user_set_owner,         &sock, nonopts[1], nonopts[abs(action_set_owner)], action_set_owner > 0);
-  ta (action_set_wait,       user_set_wait,          &sock, nonopts[1], nonopts[abs(action_set_wait)], action_set_wait > 0);
+  ta (action_set_moderator,  user_set_moderator,     &sock, nonopts[1],
+      nonopts[abs(action_set_moderator)],            action_set_moderator > 0);
+  ta (action_set_owner,      user_set_owner,         &sock, nonopts[1],
+      nonopts[abs(action_set_owner)],                action_set_owner > 0);
+  ta (action_set_wait,       user_set_wait,          &sock, nonopts[1],
+      nonopts[abs(action_set_wait)],                 action_set_wait > 0);
   if (r >= 0)
     rc = r;
   
