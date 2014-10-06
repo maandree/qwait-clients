@@ -57,6 +57,8 @@ int main(int argc_, char** argv_)
   int action_list_admins = 0;
   int action_list_users = 0;
   int action_find_user = 0;
+  int action_lock_queue = 0;
+  int action_hide_queue = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -98,6 +100,10 @@ int main(int argc_, char** argv_)
   else if (argeq2("list", "administrators", 2))                         action_list_admins = 1;
   else if (argeq2("list", "users", 2))                                  action_list_users = 1;
   else if (argeq2("find", "user", 3))                                   action_find_user = 1;
+  else if (argeq1("lock", 2))                                           action_lock_queue = 1;
+  else if (argeq1("unlock", 2))                                         action_lock_queue = -1;
+  else if (argeq1("hide", 2))                                           action_hide_queue = 1;
+  else if (argeq1("unhide", 2))                                         action_hide_queue = -1;
   else
     goto invalid_command;
   
@@ -113,8 +119,8 @@ int main(int argc_, char** argv_)
   /* Special commands that do not require a connection to the QWait server. */
   if (action_log_in || action_log_out || action_who_am_i)
     {
-      ta (action_log_in,   authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
-      ta (action_log_out,  authenticate, NULL);
+      ta (action_log_in,  authenticate, (action_log_in == -1) ? "" : nonopts[action_log_in]);
+      ta (action_log_out, authenticate, NULL);
       t  (action_who_am_i && (r = print_user_id(), r < 0));
       if (r >= 0)
 	rc = r;
@@ -136,6 +142,8 @@ int main(int argc_, char** argv_)
   ta (action_list_admins,    print_users,            &sock, QWAIT_CMD_USERS_ADMINS);
   ta (action_list_users,     print_users,            &sock, QWAIT_CMD_USERS_ALL);
   ta (action_find_user,      print_users_by_name,    &sock, nonopts[2]);
+  ta (action_lock_queue,     queue_set_lock,         &sock, nonopts[1], action_lock_queue > 0); /* XXX test */
+  ta (action_hide_queue,     queue_set_hide,         &sock, nonopts[1], action_hide_queue > 0); /* XXX test */
   if (r >= 0)
     rc = r;
   

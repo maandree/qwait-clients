@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 
@@ -39,7 +40,7 @@ int print_users(libqwaitclient_http_socket_t* restrict sock, int role)
   libqwaitclient_authentication_t auth;
   libqwaitclient_qwait_user_t* users = NULL;
   size_t i, user_count = 0;
-  int r;
+  int r, saved_errno;
   
   /* Acquire authentication information. */
   r = get_authentication(&auth);
@@ -70,9 +71,10 @@ int print_users(libqwaitclient_http_socket_t* restrict sock, int role)
   return 0;
   
  fail:
+  saved_errno = errno;
   free(users);
   libqwaitclient_authentication_destroy(&auth);
-  return -1;
+  return errno = saved_errno, -1;
   
  not_logged_in:
   fprintf(stderr, "You are not logged in.\n");
@@ -94,7 +96,7 @@ int print_users_by_name(libqwaitclient_http_socket_t* restrict sock, const char*
   libqwaitclient_authentication_t auth;
   libqwaitclient_qwait_user_t* users = NULL;
   size_t i, user_count = 0;
-  int r;
+  int r, saved_errno;
   
   /* Acquire authentication information. */
   r = get_authentication(&auth);
@@ -119,9 +121,10 @@ int print_users_by_name(libqwaitclient_http_socket_t* restrict sock, const char*
   return 0;
   
  fail:
+  saved_errno = errno;
   free(users);
   libqwaitclient_authentication_destroy(&auth);
-  return -1;
+  return errno = saved_errno, -1;
   
  not_logged_in:
   fprintf(stderr, "You are not logged in.\n");

@@ -1,8 +1,6 @@
 We need to take care of error messages from the server.
 
 Needs testing:
-      libqwaitclient_qwait_set_queue_hidden
-      libqwaitclient_qwait_set_queue_locked
       libqwaitclient_qwait_clear_queue
       libqwaitclient_qwait_delete_queue
       libqwaitclient_qwait_create_queue

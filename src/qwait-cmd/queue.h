@@ -43,6 +43,28 @@ int print_queue(libqwaitclient_http_socket_t* restrict sock, const char* restric
 int print_queue_position(libqwaitclient_http_socket_t* restrict sock,
 			 const char* restrict queue_name, const char* restrict user_id);
 
+/**
+ * Lock or unlock a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user's ID
+ * @param   locked      Whether the queue should be locked
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_set_lock(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name, int locked);
+
+/**
+ * Hide or unhide a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user's ID
+ * @param   hidden      Whether the queue should be hidden
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_set_hide(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name, int hidden);
+
 
 #endif
 

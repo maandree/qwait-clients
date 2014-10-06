@@ -18,6 +18,7 @@
 #include "queue.h"
 
 #include "globals.h"
+#include "authentication.h"
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -247,5 +248,75 @@ int print_queue_position(libqwaitclient_http_socket_t* restrict sock,
   saved_errno = errno;
   libqwaitclient_qwait_queue_destroy(&queue);
   return errno = saved_errno, errno ? -1 : rc;
+}
+
+
+/**
+ * Lock or unlock a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user's ID
+ * @param   locked      Whether the queue should be locked
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_set_lock(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name, int locked)
+{
+  /* TODO require confirmation when locking (not unlocking) */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Set lock status. */
+  r = libqwaitclient_qwait_set_queue_locked(sock, &auth, queue_name, locked);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+/**
+ * Hide or unhide a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   queue_name  The name of the queue
+ * @param   user_id     The user's ID
+ * @param   hidden      Whether the queue should be hidden
+ * @return              Zero on success, 1 if not found, -1 on error
+ */
+int queue_set_hide(libqwaitclient_http_socket_t* restrict sock, const char* restrict queue_name, int hidden)
+{
+  /* TODO require confirmation when hiding (not unhiding) */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Set hide status. */
+  libqwaitclient_qwait_set_queue_hidden(sock, &auth, queue_name, hidden);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
 }
 
