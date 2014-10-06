@@ -61,7 +61,7 @@ LIBQWAITCLIENT_OBJ = http-message http-socket json qwait-position qwait-protocol
 
 QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
-QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication user
+QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication user users
 
 ifeq ($(USE_LIBPASSPHRASE),y)
 QWAIT_CMD_LIBFLAGS += -lpassphrase

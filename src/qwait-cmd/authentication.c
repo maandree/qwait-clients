@@ -310,35 +310,43 @@ int authenticate(const char* restrict username)
  * Get authentication data
  * 
  * @param   auth  Output parameter for the authentication data
- * @return        Zero on success, -1 on error
+ * @return        Zero on success, -1 on error, 1 if not logged in
  */
 int get_authentication(libqwaitclient_authentication_t* restrict auth)
 {
   struct stat attr;
   void* address;
   size_t len;
-  int fd, r, saved_errno;
+  int fd = -1, r, saved_errno;
   char* pathname;
   
+  /* Get pathname of the file with the authentication information. */
   if (pathname = get_auth_file(), pathname == NULL)
     return -1;
   
+  /* Check that the user is logged in. */
+  r = access(pathname, F_OK);
+  if (r < 0)
+    {
+      saved_errno = errno;
+      free(pathname);
+      errno = saved_errno;
+      return errno == ENOENT ? 1 : -1;
+    }
+  
   /* Stat auth file for its size. */
   if (stat(pathname, &attr) < 0)
-    return -1;
+    goto fail;
   len = (size_t)(attr.st_size);
   
   /* Open auth file. */
   if (fd = open(pathname, O_RDONLY | O_CLOEXEC), fd < 0)
-    return -1;
+    goto fail;
   
   /* Memory map auth file. */
   address = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
   if ((address == MAP_FAILED) || (address == NULL))
-    {
-      close(fd);
-      return -1;
-    }
+    goto fail;
   
   /* Get authentication. */
   r = libqwaitclient_authentication_get(auth, address, len);
@@ -347,8 +355,16 @@ int get_authentication(libqwaitclient_authentication_t* restrict auth)
   /* Release resources. */
   close(fd);
   munmap(address, len);
+  free(pathname);
   
   return errno = saved_errno, r;
+  
+ fail:
+  saved_errno = errno;
+  if (fd >= 0)
+    close(fd);
+  free(pathname);
+  return errno = saved_errno, -1;
 }
 
 

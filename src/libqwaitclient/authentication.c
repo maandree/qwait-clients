@@ -98,7 +98,7 @@ int libqwaitclient_authentication_get(_this_, const char* restrict data, size_t 
 	goto fail;
       sprintf(buf, "%s", "Cookie: ");
       memcpy(buf + offset, data + p, len * sizeof(char));
-      buf[len] = '\0';
+      buf[offset + len] = '\0';
       
       this->headers[this->header_count++] = buf;
       
@@ -137,6 +137,7 @@ void libqwaitclient_authentication_dump(const _this_, FILE* output)
  */
 int libqwaitclient_auth_sign(const _this_, libqwaitclient_http_message_t* restrict mesg)
 {
+  char* header;
   size_t i, n;
   
   if (this == NULL)
@@ -147,7 +148,12 @@ int libqwaitclient_auth_sign(const _this_, libqwaitclient_http_message_t* restri
     return -1;
   
   for (i = 0; i < n; i++)
-    mesg->headers[mesg->header_count++] = this->headers[i];
+    {
+      header = strdup(this->headers[i]);
+      if (header == NULL)
+	return -1;
+      mesg->headers[mesg->header_count++] = header;
+    }
   
   return 0;
 }

@@ -20,6 +20,7 @@
 #include "queue.h"
 #include "authentication.h"
 #include "user.h"
+#include "users.h"
 
 #include <libqwaitclient.h>
 
@@ -53,6 +54,9 @@ int main(int argc_, char** argv_)
   int action_log_out = 0;
   int action_stat_user = 0;
   int action_who_am_i = 0;
+  int action_list_admins = 0;
+  int action_list_users = 0;
+  int action_find_user = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -90,6 +94,10 @@ int main(int argc_, char** argv_)
   else if (argeq2("stat", "user", 3))                                   action_stat_user = 2;
   else if (argeq1("stat", 2) && is_user_id(1))                          action_stat_user = 1;
   else if (argeq3("who", "am", "I", 3) || argeq3("who", "am", "i", 3))  action_who_am_i = 1;
+  else if (argeq2("list", "admins", 2))                                 action_list_admins = 1;
+  else if (argeq2("list", "administrators", 2))                         action_list_admins = 1;
+  else if (argeq2("list", "users", 2))                                  action_list_users = 1;
+  else if (argeq2("find", "user", 3))                                  action_find_user = 1;
   else
     goto invalid_command;
   
@@ -125,6 +133,9 @@ int main(int argc_, char** argv_)
   ta (action_list_owned,     print_owned_queues,     &sock, nonopts[4]);
   ta (action_list_moderated, print_moderated_queues, &sock, nonopts[4]);
   ta (action_stat_user,      print_user_information, &sock, nonopts[action_stat_user]);
+  ta (action_list_admins,    print_users,            &sock, QWAIT_CMD_USERS_ADMINS);
+  ta (action_list_users,     print_users,            &sock, QWAIT_CMD_USERS_ALL);
+  ta (action_find_user,      print_users_by_name,    &sock, nonopts[2]);
   if (r >= 0)
     rc = r;
   

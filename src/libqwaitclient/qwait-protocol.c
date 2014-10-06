@@ -192,7 +192,7 @@ static char* uri_encode(const char* restrict string)
 	}
     }
   
-  rc[j] = '\n';
+  rc[j] = '\0';
   return rc;
   
  fail:
@@ -339,7 +339,7 @@ libqwaitclient_qwait_user_t* libqwaitclient_qwait_get_users(_sock_, const _auth_
 /**
  * Find users by their real name
  * 
- * @param   sock           The socket used to remote communication
+ * @param   sock          The socket used to remote communication
  * @param   auth          User authentication
  * @param   partial_name  The all returned user's real name should contain this string
  * @param   user_count    Output parameter for the number of returned users

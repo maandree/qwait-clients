@@ -28,6 +28,7 @@
 #include "libqwaitclient/authentication.h"
 #include "libqwaitclient/qwait-user.h"
 #include "libqwaitclient/computers.h"
+#include "libqwaitclient/login-information.h"
 
 
 #endif

@@ -238,6 +238,7 @@ static void dump_send_buffer(const _this_)
 	  "\033[00;35m%s"
 	  "\033[00;01;35m(end of transmission)\033[00m\n",
 	  str);
+  free(str);
 }
 #endif
 

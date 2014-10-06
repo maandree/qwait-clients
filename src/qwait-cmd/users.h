@@ -15,36 +15,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef QWAIT_CMD_AUTHENTICATION_H
-#define QWAIT_CMD_AUTHENTICATION_H
+#ifndef QWAIT_CMD_USERS_H
+#define QWAIT_CMD_USERS_H
 
 
 #include <libqwaitclient.h>
 
 
 /**
- * Log in or log out
- * 
- * @param   username  Your username, `NULL` to log out, an empty string can be
- *                    used for your username on the computer you are using
- * @return            Zero on success, -1 on error, 1 if authentication failed
+ * Print all users
  */
-int authenticate(const char* restrict username);
+#define QWAIT_CMD_USERS_ALL  0
 
 /**
- * Get authentication data
+ * Print only QWait administrators
+ */
+#define QWAIT_CMD_USERS_ADMINS  1
+
+
+/**
+ * Print information about users on the system
  * 
- * @param   auth  Output parameter for the authentication data
+ * @param   sock  A socket that is connected to the qwait server
+ * @param   role  Either of: `QWAIT_CMD_USERS_ALL`, `QWAIT_CMD_USERS_ADMINS`
  * @return        Zero on success, -1 on error, 1 if not logged in
  */
-int get_authentication(libqwaitclient_authentication_t* restrict auth);
+int print_users(libqwaitclient_http_socket_t* restrict sock, int role);
 
 /**
- * Print the user's ID
+ * Print information about users on the system by finding them by their name
  * 
- * @return  Zero on success, -1 on error
+ * @param   sock       A socket that is connected to the qwait server
+ * @param   real_name  A string that the must exist in the real name of the printed users
+ * @return             Zero on success, -1 on error, 1 if not logged in
  */
-int print_user_id(void);
+int print_users_by_name(libqwaitclient_http_socket_t* restrict sock, const char* restrict real_name);
 
 
 #endif
