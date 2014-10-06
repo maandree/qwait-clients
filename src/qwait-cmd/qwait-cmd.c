@@ -170,8 +170,8 @@ int main(int argc_, char** argv_)
   else if (argeqn("add",    "", "as", "a",  "owner",     "of", "", NULL))  action_set_owner = 6;
   else if (argeqn("remove", "", "as",       "owner",     "of", "", NULL))  action_set_owner = -5; /* XXX test */
   else if (argeqn("remove", "", "as", "an", "owner",     "of", "", NULL))  action_set_owner = -6;
-  else if (argeqn("add",    "", "to", ""))                                 action_set_wait = 3; /* XXX test */
-  else if (argeqn("remove", "", "to", ""))                                 action_set_wait = -3;
+  else if (argeqn("add",    "", "to",   "", NULL))                         action_set_wait = 3;
+  else if (argeqn("remove", "", "from", "", NULL))                         action_set_wait = -3;
   else
     goto invalid_command;
   
