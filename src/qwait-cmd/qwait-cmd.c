@@ -50,7 +50,7 @@ static int test_verbs(char* const* verbs, size_t verb_count, ...)
   
   va_start(ap, verb_count);
   
-  for (;;)
+  for (;; i++)
     {
       p = va_arg(ap, char*);
       if (p == NULL)
@@ -64,7 +64,6 @@ static int test_verbs(char* const* verbs, size_t verb_count, ...)
 	continue;
       if (strcmp(verbs[i], p))
 	break;
-      i++;
     }
   
   va_end(ap);
@@ -134,7 +133,7 @@ int main(int argc_, char** argv_)
   /* Parse filtered command line arguments. */
   if      (argeq2("list", "queues", 2) || argeq1("queues", 1))             action_list_queues = 1;
   else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))      action_print_queue = 1;
-  else if (argeqn("find", "", "in", "", NULL))                             action_find_in_queue = 1; /* TODO test */
+  else if (argeqn("find", "", "in", "", NULL))                             action_find_in_queue = 1;
   else if (argeq4("list", "queues", "owned", "by", 5))                     action_list_owned = 1;
   else if (argeq4("list", "queues", "moderated", "by", 5))                 action_list_moderated = 1;
   else if (argeq3("log", "in", "as", 4))                                   action_log_in = 3;
