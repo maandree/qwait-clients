@@ -43,7 +43,7 @@
 #define _this_  libqwaitclient_json_t* restrict this
 
 
-#define t(expression)    if (expression)  goto fail
+#define t(expression)  if (expression)  goto fail
 
 
 
@@ -1132,7 +1132,7 @@ static int libqwaitclient_json_compose_string(const char* restrict string, size_
       else if ((' ' <= (unsigned char)c) && ((unsigned char)c < 128))
 	require += 1;
       else
-	require += strlen(libqwaitclient_json_encode_character(string, string_length, &i));
+	require += strlen(libqwaitclient_json_encode_character(string, string_length, &i)), i--;
     }
   
   /* Update *data and *length */
@@ -1161,8 +1161,9 @@ static int libqwaitclient_json_compose_string(const char* restrict string, size_
 	{
 	  const char* encoding = libqwaitclient_json_encode_character(string, string_length, &i);
 	  size_t len = strlen(encoding);
-	  memcpy(*data + len, encoding, len * sizeof(char));
+	  memcpy(*data + offset, encoding, len * sizeof(char));
 	  offset += len;
+	  i--;
 	}
     }
   (*data)[offset++] = '\"';
