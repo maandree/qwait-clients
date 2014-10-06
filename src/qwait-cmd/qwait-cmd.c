@@ -131,8 +131,8 @@ int main(int argc_, char** argv_)
 #define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
 #define argeqn(...)            (test_verbs(nonopts, j, __VA_ARGS__))
 #define is_user_id(i)          (strstr(nonopts[i], "u1") == nonopts[i])
-#define x                      ""   /* Wildcard in argeqn */
-#define e                      NULL /* End-of-arguments sentinel in argeqn */
+#define x                      ""   /* Wildcard in argeqn. */
+#define e                      NULL /* End-of-arguments sentinel in argeqn. */
   
   /* Parse filtered command line arguments. */
   if      (argeq2("list", "queues", 2) || argeq1("queues", 1))           action_list_queues = 1;
