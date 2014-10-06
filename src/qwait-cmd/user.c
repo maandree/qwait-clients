@@ -18,20 +18,23 @@
 #include "user.h"
 
 #include "globals.h"
-
-#include <libqwaitclient/macros.h>
+#include "authentication.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 
+#include <libqwaitclient/macros.h>
+
+
+#define _sock_  libqwaitclient_http_socket_t* restrict sock
 
 
 /**
  * Print information about a user
  * 
  * @param   sock     A socket that is connected to the qwait server
- * @param   user_id  The Id of the user
+ * @param   user_id  The ID of the user
  * @return           Zero on success, -1 on error
  */
 int print_user_information(libqwaitclient_http_socket_t* restrict sock, const char* restrict user_id)
@@ -133,4 +136,146 @@ int print_user_information(libqwaitclient_http_socket_t* restrict sock, const ch
   libqwaitclient_qwait_user_destroy(&user);
   return errno = saved_errno, errno ? -1 : 0;
 }
+
+
+/**
+ * Add or remove QWait administrator status for a user
+ * 
+ * @param   sock     A socket that is connected to the qwait server
+ * @param   user_id  The ID of the user
+ * @param   admin    Whether the user should be an administrator
+ * @return           Zero on success, -1 on error
+ */
+int user_set_admin(_sock_, const char* restrict user_id, int admin)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Create queue. */
+  r = libqwaitclient_qwait_set_admin(sock, &auth, user_id, admin);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+/**
+ * Add or remove moderator status for a user over a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   moderator   Whether the user should be a moderator
+ * @return              Zero on success, -1 on error
+ */
+int user_set_moderator(_sock_, const char* restrict user_id, const char* restrict queue_name, int moderator)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Create queue. */
+  r = libqwaitclient_qwait_set_queue_moderator(sock, &auth, queue_name, user_id, moderator);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+/**
+ * Add or remove owner status for a user over a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   owner       Whether the user should be an owner
+ * @return              Zero on success, -1 on error
+ */
+int user_set_owner(_sock_, const char* restrict user_id, const char* restrict queue_name, int owner)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Create queue. */
+  r = libqwaitclient_qwait_set_queue_owner(sock, &auth, queue_name, user_id, owner);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+/**
+ * Make a user join or leave a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   wait        Whether the user should be in the queue
+ * @return              Zero on success, -1 on error
+ */
+int user_set_wait(_sock_, const char* restrict user_id, const char* restrict queue_name, int wait)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Create queue. */
+  r = libqwaitclient_qwait_set_queue_wait(sock, &auth, queue_name, user_id, wait);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+#undef _sock
 

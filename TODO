@@ -1,12 +1,8 @@
 We need to take care of error messages from the server.
 
 Needs testing:
-      libqwaitclient_qwait_set_queue_wait
       libqwaitclient_qwait_set_queue_wait_comment
       libqwaitclient_qwait_set_queue_wait_location
-      libqwaitclient_qwait_set_queue_moderator
-      libqwaitclient_qwait_set_queue_owner
-      libqwaitclient_qwait_set_admin
       libqwaitclient_qwait_get_login_information
 
 We need to be able get push notifications from the server,
