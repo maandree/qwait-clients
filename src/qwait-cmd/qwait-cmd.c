@@ -97,7 +97,7 @@ int main(int argc_, char** argv_)
   else if (argeq2("list", "admins", 2))                                 action_list_admins = 1;
   else if (argeq2("list", "administrators", 2))                         action_list_admins = 1;
   else if (argeq2("list", "users", 2))                                  action_list_users = 1;
-  else if (argeq2("find", "user", 3))                                  action_find_user = 1;
+  else if (argeq2("find", "user", 3))                                   action_find_user = 1;
   else
     goto invalid_command;
   
