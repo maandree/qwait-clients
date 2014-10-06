@@ -133,7 +133,7 @@ static int protocol_query(_sock_, _mesg_, _json_, const libqwaitclient_json_t* r
   
   /* Add headers: Content-Type */
   if (content != NULL)
-    t (mkstr(mesg->headers[mesg->header_count], "Content-Type: application/json"));
+    t (mkstr(mesg->headers[mesg->header_count++], "Content-Type: application/json"));
   
   /* Add content. */
   if (content != NULL)

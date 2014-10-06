@@ -77,6 +77,30 @@ int user_set_owner(_sock_, const char* restrict user_id, const char* restrict qu
  */
 int user_set_wait(_sock_, const char* restrict user_id, const char* restrict queue_name, int wait);
 
+/**
+ * Change the comment for a entry in a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   comment     The comment for the user's entry in the queue
+ * @return              Zero on success, -1 on error
+ */
+int user_set_comment(_sock_, const char* restrict user_id, const char* restrict queue_name,
+		     const char* restrict comment);
+
+/**
+ * Change the announced location for a entry in a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   comment     The student's physical location
+ * @return              Zero on success, -1 on error
+ */
+int user_set_location(_sock_, const char* restrict user_id, const char* restrict queue_name,
+		     const char* restrict location);
+
 
 #undef _sock_
 

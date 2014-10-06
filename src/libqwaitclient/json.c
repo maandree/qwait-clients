@@ -1173,7 +1173,7 @@ static int libqwaitclient_json_compose_string(const char* restrict string, size_
   if (old)
     *data = old;
   return -1;
-}
+} /* FIXME this function does not work with åäö */
 
 
 /**
@@ -1246,8 +1246,8 @@ int libqwaitclient_json_compose(const _this_, char** restrict data, size_t* rest
 	  t (libqwaitclient_json_compose_string(this->data.object[i].name,
 						this->data.object[i].name_length,
 						data, length));
-	  t ((i > 0) && update(1));
-	  t ((i > 0) && extend(":"));
+	  t (update(1));
+	  t (extend(":"));
 	  t (libqwaitclient_json_compose(&(this->data.object[i].value), data, length));
 	}
       t (update(1));

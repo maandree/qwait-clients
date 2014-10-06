@@ -105,6 +105,8 @@ int main(int argc_, char** argv_)
   int action_set_moderator = 0;
   int action_set_owner = 0;
   int action_set_wait = 0;
+  int action_set_comment = 0;
+  int action_set_location = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -129,52 +131,61 @@ int main(int argc_, char** argv_)
 #define argeq4(A, B, C, D, c)  ((c == j) && argeq(0, A) && argeq(1, B) && argeq(2, C) && argeq(3, D))
 #define argeqn(...)            (test_verbs(nonopts, j, __VA_ARGS__))
 #define is_user_id(i)          (strstr(nonopts[i], "u1") == nonopts[i])
+#define x                      ""   /* Wildcard in argeqn */
+#define e                      NULL /* End-of-arguments sentinel in argeqn */
   
   /* Parse filtered command line arguments. */
-  if      (argeq2("list", "queues", 2) || argeq1("queues", 1))             action_list_queues = 1;
-  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))      action_print_queue = 1;
-  else if (argeqn("find", "", "in", "", NULL))                             action_find_in_queue = 1;
-  else if (argeq4("list", "queues", "owned", "by", 5))                     action_list_owned = 1;
-  else if (argeq4("list", "queues", "moderated", "by", 5))                 action_list_moderated = 1;
-  else if (argeq3("log", "in", "as", 4))                                   action_log_in = 3;
-  else if (argeq2("login", "as", 3))                                       action_log_in = 2;
-  else if (argeq2("log", "in", 2) || argeq1("login", 1))                   action_log_in = -1;
-  else if (argeq2("log", "out", 2) || argeq1("logout", 1))                 action_log_out = 1;
-  else if (argeq2("stat", "user", 3))                                      action_stat_user = 2;
-  else if (argeq1("stat", 2) && is_user_id(1))                             action_stat_user = 1;
-  else if (argeq3("who", "am", "I", 3) || argeq3("who", "am", "i", 3))     action_who_am_i = 1;
-  else if (argeq2("list", "admins", 2))                                    action_list_admins = 1;
-  else if (argeq2("list", "administrators", 2))                            action_list_admins = 1;
-  else if (argeq2("list", "users", 2))                                     action_list_users = 1;
-  else if (argeq2("find", "user", 3))                                      action_find_user = 1;
-  else if (argeq1("lock", 2))                                              action_lock_queue = 1; /* XXX test */
-  else if (argeq1("unlock", 2))                                            action_lock_queue = -1; /* XXX test */
-  else if (argeq1("hide", 2))                                              action_hide_queue = 1; /* XXX test */
-  else if (argeq1("unhide", 2))                                            action_hide_queue = -1; /* XXX test */
-  else if (argeq1("clear", 2))                                             action_clear_queue = 1; /* XXX test */
-  else if (argeq1("delete", 2))                                            action_delete_queue = 1; /* XXX test */
-  else if (argeq1("create", 2))                                            action_create_queue = 1; /* XXX test */
-  else if (argeqn("add",    "", "as",       "admin",         NULL))        action_set_admin = 1; /* XXX test */
-  else if (argeqn("add",    "", "as",       "administrator", NULL))        action_set_admin = 1;
-  else if (argeqn("add",    "", "as", "an", "admin",         NULL))        action_set_admin = 1;
-  else if (argeqn("add",    "", "as", "an", "administrator", NULL))        action_set_admin = 1;
-  else if (argeqn("remove", "", "as",       "admin",         NULL))        action_set_admin = -1; /* XXX test */
-  else if (argeqn("remove", "", "as",       "administrator", NULL))        action_set_admin = -1;
-  else if (argeqn("remove", "", "as", "an", "admin",         NULL))        action_set_admin = -1;
-  else if (argeqn("remove", "", "as", "an", "administrator", NULL))        action_set_admin = -1;
-  else if (argeqn("add",    "", "as",       "moderator", "of", "", NULL))  action_set_moderator = 5; /* XXX test */
-  else if (argeqn("add",    "", "as", "a",  "moderator", "of", "", NULL))  action_set_moderator = 6;
-  else if (argeqn("remove", "", "as",       "moderator", "of", "", NULL))  action_set_moderator = -5; /* XXX test */
-  else if (argeqn("remove", "", "as", "a",  "moderator", "of", "", NULL))  action_set_moderator = -6;
-  else if (argeqn("add",    "", "as",       "owner",     "of", "", NULL))  action_set_owner = 5; /* XXX test */
-  else if (argeqn("add",    "", "as", "a",  "owner",     "of", "", NULL))  action_set_owner = 6;
-  else if (argeqn("remove", "", "as",       "owner",     "of", "", NULL))  action_set_owner = -5; /* XXX test */
-  else if (argeqn("remove", "", "as", "an", "owner",     "of", "", NULL))  action_set_owner = -6;
-  else if (argeqn("add",    "", "to",   "", NULL))                         action_set_wait = 3;
-  else if (argeqn("remove", "", "from", "", NULL))                         action_set_wait = -3;
+  if      (argeq2("list", "queues", 2) || argeq1("queues", 1))           action_list_queues = 1;
+  else if (argeq2("print", "queue", 3) || argeq2("view", "queue", 3))    action_print_queue = 1;
+  else if (argeqn("find", x, "in", x, e))                                action_find_in_queue = 1;
+  else if (argeq4("list", "queues", "owned", "by", 5))                   action_list_owned = 1;
+  else if (argeq4("list", "queues", "moderated", "by", 5))               action_list_moderated = 1;
+  else if (argeq3("log", "in", "as", 4))                                 action_log_in = 3;
+  else if (argeq2("login", "as", 3))                                     action_log_in = 2;
+  else if (argeq2("log", "in", 2) || argeq1("login", 1))                 action_log_in = -1;
+  else if (argeq2("log", "out", 2) || argeq1("logout", 1))               action_log_out = 1;
+  else if (argeq2("stat", "user", 3))                                    action_stat_user = 2;
+  else if (argeq1("stat", 2) && is_user_id(1))                           action_stat_user = 1;
+  else if (argeq3("who", "am", "I", 3) || argeq3("who", "am", "i", 3))   action_who_am_i = 1;
+  else if (argeq2("list", "admins", 2))                                  action_list_admins = 1;
+  else if (argeq2("list", "administrators", 2))                          action_list_admins = 1;
+  else if (argeq2("list", "users", 2))                                   action_list_users = 1;
+  else if (argeq2("find", "user", 3))                                    action_find_user = 1;
+  else if (argeq1("lock", 2))                                            action_lock_queue = 1; /* XXX test */
+  else if (argeq1("unlock", 2))                                          action_lock_queue = -1; /* XXX test */
+  else if (argeq1("hide", 2))                                            action_hide_queue = 1; /* XXX test */
+  else if (argeq1("unhide", 2))                                          action_hide_queue = -1; /* XXX test */
+  else if (argeq1("clear", 2))                                           action_clear_queue = 1;
+  else if (argeq1("delete", 2))                                          action_delete_queue = 1; /* XXX test */
+  else if (argeq1("create", 2))                                          action_create_queue = 1; /* XXX test */
+  else if (argeqn("add",    x, "as",       "admin",         e))          action_set_admin = 1; /* XXX test */
+  else if (argeqn("add",    x, "as",       "administrator", e))          action_set_admin = 1;
+  else if (argeqn("add",    x, "as", "an", "admin",         e))          action_set_admin = 1;
+  else if (argeqn("add",    x, "as", "an", "administrator", e))          action_set_admin = 1;
+  else if (argeqn("remove", x, "as",       "admin",         e))          action_set_admin = -1; /* XXX test */
+  else if (argeqn("remove", x, "as",       "administrator", e))          action_set_admin = -1;
+  else if (argeqn("remove", x, "as", "an", "admin",         e))          action_set_admin = -1;
+  else if (argeqn("remove", x, "as", "an", "administrator", e))          action_set_admin = -1;
+  else if (argeqn("add",    x, "as",       "moderator", "of", x, e))     action_set_moderator = 5; /* XXX test */
+  else if (argeqn("add",    x, "as", "a",  "moderator", "of", x, e))     action_set_moderator = 6;
+  else if (argeqn("remove", x, "as",       "moderator", "of", x, e))     action_set_moderator = -5; /* XXX test */
+  else if (argeqn("remove", x, "as", "a",  "moderator", "of", x, e))     action_set_moderator = -6;
+  else if (argeqn("add",    x, "as",       "owner",     "of", x, e))     action_set_owner = 5; /* XXX test */
+  else if (argeqn("add",    x, "as", "a",  "owner",     "of", x, e))     action_set_owner = 6;
+  else if (argeqn("remove", x, "as",       "owner",     "of", x, e))     action_set_owner = -5; /* XXX test */
+  else if (argeqn("remove", x, "as", "an", "owner",     "of", x, e))     action_set_owner = -6;
+  else if (argeqn("add",    x, "to",   x, e))                            action_set_wait = 3;
+  else if (argeqn("remove", x, "from", x, e))                            action_set_wait = -3;
+  else if (argeqn("set",    "comment",  "for", x, "in", x, "to", x, e))  action_set_comment = 1;
+  else if (argeqn("change", "comment",  "for", x, "in", x, "to", x, e))  action_set_comment = 1;
+  else if (argeqn("set",    "location", "for", x, "in", x, "to", x, e))  action_set_location = 1;
+  else if (argeqn("change", "location", "for", x, "in", x, "to", x, e))  action_set_location = 1;
   else
     goto invalid_command;
+  /* TODO test action_set_wait, action_set_comment and action_set_location upon others. */
   
+#undef e
+#undef x
 #undef is_user_id
 #undef argeq4
 #undef argeq3
@@ -222,6 +233,8 @@ int main(int argc_, char** argv_)
       nonopts[abs(action_set_owner)],                action_set_owner > 0);
   ta (action_set_wait,       user_set_wait,          &sock, nonopts[1],
       nonopts[abs(action_set_wait)],                 action_set_wait > 0);
+  ta (action_set_comment,    user_set_comment,       &sock, nonopts[3], nonopts[5], nonopts[7]);
+  ta (action_set_location,   user_set_location,      &sock, nonopts[3], nonopts[5], nonopts[7]);
   if (r >= 0)
     rc = r;
   

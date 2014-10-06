@@ -277,5 +277,77 @@ int user_set_wait(_sock_, const char* restrict user_id, const char* restrict que
 }
 
 
+/**
+ * Change the comment for a entry in a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   comment     The comment for the user's entry in the queue
+ * @return              Zero on success, -1 on error
+ */
+int user_set_comment(_sock_, const char* restrict user_id, const char* restrict queue_name,
+		     const char* restrict comment)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Change comment. */
+  r = libqwaitclient_qwait_set_queue_wait_comment(sock, &auth, queue_name, user_id, comment);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
+/**
+ * Change the announced location for a entry in a queue
+ * 
+ * @param   sock        A socket that is connected to the qwait server
+ * @param   user_id     The ID of the user
+ * @parma   queue_name  The name of queue
+ * @param   comment     The student's physical location
+ * @return              Zero on success, -1 on error
+ */
+int user_set_location(_sock_, const char* restrict user_id, const char* restrict queue_name,
+		     const char* restrict location)
+{
+  /* TODO require confirmation */
+  
+  libqwaitclient_authentication_t auth;
+  int r, saved_errno;
+  
+  /* Acquire authentication information. */
+  r = get_authentication(&auth);
+  if (r < 0)   goto fail;
+  if (r == 1)  goto not_logged_in;
+  
+  /* Change location. */
+  r = libqwaitclient_qwait_set_queue_wait_location(sock, &auth, queue_name, user_id, location);
+  
+ fail:
+  saved_errno = errno;
+  libqwaitclient_authentication_destroy(&auth);
+  return errno = saved_errno, r;
+  
+ not_logged_in:
+  fprintf(stderr, "You are not logged in.\n");
+  return 1;
+}
+
+
 #undef _sock
 
