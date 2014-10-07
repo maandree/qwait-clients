@@ -143,7 +143,7 @@ static int libqwaitclient_login_information_jsonify_strings(char* restrict data)
 	{
 	  if      (escape)         escape = 0;
 	  else if (c == '\\')      escape = 1;
-	  else if (c == quote)     quote = '\0';
+	  else if (c == quote)     quote = '\0', c = '\"';
 	  else if (c == '"')
 	    {
 	      if (data[j] == '\0')
@@ -154,13 +154,14 @@ static int libqwaitclient_login_information_jsonify_strings(char* restrict data)
 	    }
 	}
       else if (strchr("\'\"", c))
-	quote = c, c = '\"';
+	quote = c, c = '"';
       
       if (data[j] == '\0')
 	return errno = EBADMSG, -1; /* Same problem as earlier. */
       data[j++] = c;
     }
   
+  j--;
   /* Move new string to where the old string was. */
   memmove(data, data + n + 1, (j - n) * sizeof(char));
   /* NUL-termiante the data. */
@@ -223,7 +224,7 @@ static int libqwaitclient_login_information_jsonify_keys(char* restrict data)
       else if (stage == 2)
 	{
 	  if (strchr(WHITESPACE, c) != NULL)
-	    data[j--] = c, stage = 0, c = '\"';
+	    data[j--] = '\"', stage = 0;
 	}
       else if (quote)
 	{
@@ -309,6 +310,7 @@ static int libqwaitclient_login_information_parse_json(_this_, _json_)
   const libqwaitclient_json_t* restrict data_hostname     = NULL;
   libqwaitclient_json_t*       restrict data_current_user = NULL;
   libqwaitclient_json_t*       restrict data_product      = NULL;
+  libqwaitclient_json_association_t* old;
   size_t i, n = json->length;
   int saved_errno;
   
@@ -352,10 +354,14 @@ static int libqwaitclient_login_information_parse_json(_this_, _json_)
   if (data_product->type      != LIBQWAITCLIENT_JSON_TYPE_OBJECT)  goto einval;
   if (data_product->length    != 2)                                goto einval;
   /*  Add empty data for missing information for the user so we can use qwait-user to parse that information.  */
-  if (xmalloc(data_current_user->data.object,
-	      data_current_user->length + 3,
-	      libqwaitclient_json_association_t))
-    goto fail;
+  old = data_current_user->data.object;
+  if (xrealloc(data_current_user->data.object,
+	       data_current_user->length + 3,
+	       libqwaitclient_json_association_t))
+    {
+      data_current_user->data.object = old;
+      goto fail;
+    }
   if (array0(data_current_user->data.object + data_current_user->length++, "queuePositions"))   goto fail;
   if (array0(data_current_user->data.object + data_current_user->length++, "ownedQueues"))      goto fail;
   if (array0(data_current_user->data.object + data_current_user->length++, "moderatedQueues"))  goto fail;
@@ -461,16 +467,16 @@ void libqwaitclient_login_information_dump(const _this_, FILE* output)
     fprintf(output, "%s%s", i ? ", " : ": ", this->current_user.roles[i]);
   fprintf(output, "\n");
   
-  fprintf(output, this->current_user.owned_queue_count
+  fprintf(output, this->current_user.owned_queue_count == 0
 	  ? "" : "    owned_queue_count > 0, this is an error\n");
-  fprintf(output, this->current_user.moderated_queue_count
+  fprintf(output, this->current_user.moderated_queue_count == 0
 	  ? "" : "    moderated_queue_count > 0, this is an error\n");
-  fprintf(output, this->current_user.queue_count
+  fprintf(output, this->current_user.queue_count == 0
 	  ? "" : "    queue_count > 0, this is an error\n");
   
   fprintf(output, "hostname: %s\n", this->hostname);
-  fprintf(output, "product name:\n", this->product.name);
-  fprintf(output, "product version:\n", this->product.version);
+  fprintf(output, "product name: %s\n", this->product.name);
+  fprintf(output, "product version: %s\n", this->product.version);
 }
 
 

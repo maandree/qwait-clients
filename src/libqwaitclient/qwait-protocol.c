@@ -795,7 +795,7 @@ int libqwaitclient_qwait_get_login_information(_sock_, const _auth_, _login_)
   t (libqwaitclient_auth_sign(auth, &mesg));
   t (mkstr(mesg.top, "GET / HTTP/1.1"));
   t (protocol_query(sock, &mesg, NULL, NULL));
-  t (libqwaitclient_login_information_parse(login, mesg.content, mesg.content_size));
+  t (libqwaitclient_login_information_parse(login, sock->message.content, sock->message.content_size));
   
   return destroy(&mesg, NULL), 0;
  fail:

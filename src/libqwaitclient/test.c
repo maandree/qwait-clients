@@ -30,28 +30,23 @@
 int main(int argc, char** argv)
 {
   libqwaitclient_http_socket_t sock;
-  libqwaitclient_qwait_queue_t* queues = NULL;
-  size_t i, n;
+  libqwaitclient_login_information_t login;
   int rc = 0;
   
   (void) argc;
   
+  libqwaitclient_login_information_initialise(&login);
+  
   t (libqwaitclient_http_socket_initialise(&sock, QWAIT_SERVER_HOST, QWAIT_SERVER_PORT));
   t (libqwaitclient_http_socket_connect(&sock));
   
-  t ((queues = libqwaitclient_qwait_get_queues(&sock, &n)) == NULL);
-  for (i = 0; i < n; i++)
-    {
-      printf(i ? "\n" : "");
-      libqwaitclient_qwait_queue_dump(queues + i, stdout);
-    }
+  t (libqwaitclient_qwait_get_login_information(&sock, NULL, &login));
+  libqwaitclient_login_information_dump(&login, stdout);
   
  done:
   libqwaitclient_http_socket_disconnect(&sock);
   libqwaitclient_http_socket_destroy(&sock);
-  for (i = 0; i < n; i++)
-      libqwaitclient_qwait_queue_destroy(queues + i);
-  free(queues);
+  libqwaitclient_login_information_destroy(&login);
   return rc;
   
  fail:
