@@ -5,25 +5,25 @@
 
 
 # The package path prefix, if you want to install to another root, set DESTDIR to that root.
-PREFIX ?= /usr
+PREFIX = /usr
 # The binary path excluding prefix.
-BIN ?= /bin
+BIN = /bin
 # The library binary path excluding prefix.
-LIBEXEC ?= /libexec
+LIBEXEC = /libexec
 # The resource path excluding prefix.
-DATA ?= /share
+DATA = /share
 # The binary path including prefix.
-BINDIR ?= $(PREFIX)$(BIN)
+BINDIR = $(PREFIX)$(BIN)
 # The library binary path including prefix.
-LIBEXECDIR ?= $(PREFIX)$(LIBEXEC)
+LIBEXECDIR = $(PREFIX)$(LIBEXEC)
 # The resource path including prefix.
-DATADIR ?= $(PREFIX)$(DATA)
+DATADIR = $(PREFIX)$(DATA)
 # The license base path including prefix.
-LICENSEDIR ?= $(DATADIR)/licenses
+LICENSEDIR = $(DATADIR)/licenses
 
 
 # The name of the package as it should be installed.
-PKGNAME ?= qwait-clients
+PKGNAME = qwait-clients
 
 
 SHARED = -shared
