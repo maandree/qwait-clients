@@ -100,6 +100,14 @@ void libqwaitclient_login_information_destroy(_this_);
  */
 int libqwaitclient_login_information_parse(_this_, char* restrict message, size_t message_length);
 
+/**
+ * Print a login informaton in debug format
+ * 
+ * @param  this    The login information
+ * @param  output  The output sink
+ */
+void libqwaitclient_login_information_dump(const _this_, FILE* output);
+
 
 #undef _this_
 

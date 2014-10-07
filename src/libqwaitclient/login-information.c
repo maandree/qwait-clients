@@ -441,6 +441,39 @@ int libqwaitclient_login_information_parse(_this_, char* restrict message, size_
 }
 
 
+/**
+ * Print a login informaton in debug format
+ * 
+ * @param  this    The login information
+ * @param  output  The output sink
+ */
+void libqwaitclient_login_information_dump(const _this_, FILE* output)
+{
+  size_t i, n;
+  
+  fprintf(output, "current user:\n");
+  fprintf(output, "  %s (%s)\n", this->current_user.real_name, this->current_user.user_id);
+  fprintf(output, "    admin: %s\n",   this->current_user.admin     ? "yes" : "no");
+  fprintf(output, "    anonymous: %s\n", this->current_user.anonymous ? "yes" : "no");
+  
+  fprintf(output, this->current_user.role_count ? "    roles" : "    no roles");
+  for (i = 0, n = this->current_user.role_count; i < n; i++)
+    fprintf(output, "%s%s", i ? ", " : ": ", this->current_user.roles[i]);
+  fprintf(output, "\n");
+  
+  fprintf(output, this->current_user.owned_queue_count
+	  ? "" : "    owned_queue_count > 0, this is an error\n");
+  fprintf(output, this->current_user.moderated_queue_count
+	  ? "" : "    moderated_queue_count > 0, this is an error\n");
+  fprintf(output, this->current_user.queue_count
+	  ? "" : "    queue_count > 0, this is an error\n");
+  
+  fprintf(output, "hostname: %s\n", this->hostname);
+  fprintf(output, "product name:\n", this->product.name);
+  fprintf(output, "product version:\n", this->product.version);
+}
+
+
 
 #undef _json_
 #undef _this_
