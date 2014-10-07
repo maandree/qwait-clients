@@ -76,18 +76,18 @@ all: libqwaitclient qwait-cmd
 
 
 .PHONY: libqwaitclient
-libqwaitclient: bin/libqwaitclient.so bin/libqwaitclient/test
+libqwaitclient: bin/libqwaitclient.so bin/libqwaitclient-test
 
 obj/libqwaitclient/%.o: src/libqwaitclient/%.c src/libqwaitclient/*.h
 	@mkdir -p obj/libqwaitclient
 	$(CC) $(C_FLAGS) $(LIBQWAITCLIENT_CFLAGS) $(PIC) -c $< -o $@
 
-bin/libqwaitclient/test: $(foreach O,$(LIBQWAITCLIENT_OBJ) test,obj/libqwaitclient/$(O).o)
-	@mkdir -p bin/libqwaitclient
+bin/libqwaitclient-test: $(foreach O,$(LIBQWAITCLIENT_OBJ) test,obj/libqwaitclient/$(O).o)
+	@mkdir -p bin
 	$(CC) $(LD_FLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $^ -o $@
 
 bin/libqwaitclient.so: $(foreach O,$(LIBQWAITCLIENT_OBJ),obj/libqwaitclient/$(O).o)
-	@mkdir -p bin/libqwaitclient
+	@mkdir -p bin
 	$(CC) $(LD_FLAGS) $(LIBQWAITCLIENT_LIBFLAGS) $(SHARED) $(LDSO) $^ -o $@
 
 
@@ -99,7 +99,7 @@ obj/qwait-cmd/%.o: src/qwait-cmd/%.c src/qwait-cmd/*.h
 	$(CC) $(C_FLAGS) $(QWAIT_CMD_CFLAGS) -c $< -o $@
 
 bin/qwait-cmd: $(foreach O,$(QWAIT_CMD_OBJ),obj/qwait-cmd/$(O).o) bin/libqwaitclient.so
-	@mkdir -p bin/libqwaitclient
+	@mkdir -p bin
 	$(CC) $(LD_FLAGS) $(QWAIT_CMD_LIBFLAGS) $^ -o $@
 
 
