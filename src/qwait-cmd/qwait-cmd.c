@@ -21,6 +21,7 @@
 #include "authentication.h"
 #include "user.h"
 #include "users.h"
+#include "miscellaneous.h"
 
 #include <libqwaitclient.h>
 
@@ -107,6 +108,9 @@ int main(int argc_, char** argv_)
   int action_set_wait = 0;
   int action_set_comment = 0;
   int action_set_location = 0;
+  int action_where_am_i = 0;
+  int action_stat_qwait = 0;
+  int action_stat_login = 0;
   
   /* Globalise the command line arguments. */
   argc = argc_;
@@ -180,6 +184,10 @@ int main(int argc_, char** argv_)
   else if (argeqn("change", "comment",  "for", x, "in", x, "to", x, e))  action_set_comment = 1;
   else if (argeqn("set",    "location", "for", x, "in", x, "to", x, e))  action_set_location = 1;
   else if (argeqn("change", "location", "for", x, "in", x, "to", x, e))  action_set_location = 1;
+  else if (argeq3("where", "am", "i", 3))                                action_where_am_i = 1;
+  else if (argeq3("where", "am", "I", 3))                                action_where_am_i = 1;
+  else if (argeq2("stat", "qwait", 2))                                   action_stat_qwait = 1;
+  else if (argeq2("stat", "login", 2))                                   action_stat_login = 1;
   else
     goto invalid_command;
   /* TODO test action_set_wait, action_set_comment and action_set_location upon others. */
@@ -235,6 +243,9 @@ int main(int argc_, char** argv_)
       nonopts[abs(action_set_wait)],                 action_set_wait > 0);
   ta (action_set_comment,    user_set_comment,       &sock, nonopts[3], nonopts[5], nonopts[7]);
   ta (action_set_location,   user_set_location,      &sock, nonopts[3], nonopts[5], nonopts[7]);
+  ta (action_where_am_i,     print_user_hostname,    &sock);
+  ta (action_stat_qwait,     print_qwait_version,    &sock);
+  ta (action_stat_login,     print_user_login,       &sock);
   if (r >= 0)
     rc = r;
   

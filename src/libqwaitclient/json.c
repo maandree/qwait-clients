@@ -305,8 +305,8 @@ static size_t libqwaitclient_json_subparse_string(_this_, const char* restrict c
 	{
 	  /* \x (\X), \u and \U */
 	  if      (('0' <= c) && (c <= '9'))  escaped = (escaped << 4) | (c & 15);
-	  else if (('a' <= c) && (c <= 'f'))  escaped = (escaped << 4) | (c - 'a' + 1);
-	  else if (('A' <= c) && (c <= 'F'))  escaped = (escaped << 4) | (c - 'A' + 1);
+	  else if (('a' <= c) && (c <= 'f'))  escaped = (escaped << 4) | (c - 'a' + 10);
+	  else if (('A' <= c) && (c <= 'F'))  escaped = (escaped << 4) | (c - 'A' + 10);
 	  else
 	    return D("non-hexadecimal digit in hexadecimal escape",), free(utf32), errno = EINVAL, 0U;
 	  if (--escape == 0)

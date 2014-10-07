@@ -59,6 +59,7 @@ static size_t dump_string(char* restrict output, const char* restrict input, siz
       else if (c == '\v')   output[j++] = '\\', output[j++] = 'v';
       else if (c == '\b')   output[j++] = '\\', output[j++] = 'b';
       else if (c == '\n')   output[j++] = '\\', output[j++] = 'n', output[j++] = '\n';
+      else if (c == '\\')   output[j++] = '\\', output[j++] = '\\';
       else if ((c >= 127) || (c < ' '))
 	{
 	  output[j++] = '\\';
