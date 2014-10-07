@@ -35,6 +35,112 @@
 
 
 
+#ifdef VERBOSE_DEBUG
+/**
+ * Escape a string and print it to buffer
+ * 
+ * @param   output  Output sink for the string that should be escaped
+ * @param   input   The string to escape and write to `output`
+ * @param   length  The length of `input`
+ * @return          The number of written bytes, at most four times
+ *                  `length`, not NUL-terminated
+ */
+static size_t dump_string(char* restrict output, const char* restrict input, size_t length)
+{
+  size_t i, j;
+  for (i = j = 0; i < length; i++)
+    {
+      unsigned char c = (unsigned char)(input[i]);
+      if    (c == '\033')   output[j++] = '\\', output[j++] = 'e';
+      else if (c == '\r')   output[j++] = '\\', output[j++] = 'r';
+      else if (c == '\t')   output[j++] = '\\', output[j++] = 't';
+      else if (c == '\a')   output[j++] = '\\', output[j++] = 'a';
+      else if (c == '\f')   output[j++] = '\\', output[j++] = 'f';
+      else if (c == '\v')   output[j++] = '\\', output[j++] = 'v';
+      else if (c == '\b')   output[j++] = '\\', output[j++] = 'b';
+      else if (c == '\n')   output[j++] = '\\', output[j++] = 'n', output[j++] = '\n';
+      else if ((c >= 127) || (c < ' '))
+	{
+	  output[j++] = '\\';
+	  output[j++] = 'x';
+	  output[j++] = "0123456789abcdef"[(c >> 4) & 15];
+	  output[j++] = "0123456789abcdef"[(c >> 0) & 15];
+	}
+      else
+	output[j++] = (char)c;
+    }
+  return j;
+}
+
+
+/**
+ * Dump the send buffer to stderr
+ * 
+ * @param  this  The HTTP socket
+ */
+static void dump_send_buffer(const _this_)
+{
+  size_t offset = 0;
+  char* str = malloc((this->send_buffer_size * 4 + 1) * sizeof(char));
+  if (str == NULL)
+    {
+      perror("\033[01;31mskipping transmission output");
+      fprintf(stderr, "\033[00m");
+      fflush(stderr);
+      return;
+    }
+  offset += dump_string(str + offset, this->send_buffer, this->send_buffer_size);
+  str[offset++] = '\0';
+  fprintf(stderr,
+	  "\033[00;01;35m(start of transmission on next line)\n"
+	  "\033[00;35m%s"
+	  "\033[00;01;35m(end of transmission)\033[00m\n",
+	  str);
+  free(str);
+}
+
+
+/**
+ * Dump the receive message to stderr
+ * 
+ * @param  this  The HTTP socket
+ */
+static void dump_message(const _this_)
+{
+  size_t offset = 0, i, n;
+  char* str;
+  n = strlen(this->message.top) + 2;
+  for (i = 0; i < this->message.header_count; i++)
+    n += strlen(this->message.headers[i]) + 2;
+  n = 2 + this->message.content_size;
+  str = malloc((n * 4 + 1) * sizeof(char));
+  if (str == NULL)
+    {
+      perror("\033[01;31mskipping received message output");
+      fprintf(stderr, "\033[00m");
+      fflush(stderr);
+      return;
+    }
+  offset += dump_string(str + offset, this->message.top, strlen(this->message.top));
+  sprintf(str + offset, "\\r\\n\n"), offset += 5;
+  for (i = 0; i < this->message.header_count; i++)
+    {
+      offset += dump_string(str + offset, this->message.headers[i], strlen(this->message.headers[i]));
+      sprintf(str + offset, "\\r\\n\n"), offset += 5;
+    }
+  sprintf(str + offset, "\\r\\n\n"), offset += 5;
+  offset += dump_string(str + offset, this->message.content, this->message.content_size);
+  str[offset++] = '\0';
+  fprintf(stderr,
+	  "\033[00;01;32m(start of received message on next line)\n"
+	  "\033[00;32m%s"
+	  "\033[00;01;32m(end of received message)\033[00m\n",
+	  str);
+  free(str);
+}
+#endif
+
+
 /**
  * Initialise an HTTP socket
  * 
@@ -194,55 +300,6 @@ void libqwaitclient_http_socket_disconnect(_this_)
 }
 
 
-#ifdef VERBOSE_DEBUG
-/**
- * Dump the send buffer to stderr
- * 
- * @param  this  The HTTP socket
- */
-static void dump_send_buffer(const _this_)
-{
-  size_t i, j, n;
-  char* str = malloc((this->send_buffer_size * 4 + 1) * sizeof(char));
-  if (str == NULL)
-    {
-      perror("\033[01;31mskipping transmission output");
-      fprintf(stderr, "\033[00m");
-      fflush(stderr);
-      return;
-    }
-  for (i = j = 0, n = this->send_buffer_size; i < n; i++)
-    {
-      unsigned char c = (unsigned char)(this->send_buffer[i]);
-      if    (c == '\033')   str[j++] = '\\', str[j++] = 'e';
-      else if (c == '\r')   str[j++] = '\\', str[j++] = 'r';
-      else if (c == '\t')   str[j++] = '\\', str[j++] = 't';
-      else if (c == '\a')   str[j++] = '\\', str[j++] = 'a';
-      else if (c == '\f')   str[j++] = '\\', str[j++] = 'f';
-      else if (c == '\v')   str[j++] = '\\', str[j++] = 'v';
-      else if (c == '\b')   str[j++] = '\\', str[j++] = 'b';
-      else if (c == '\n')   str[j++] = '\\', str[j++] = 'n', str[j++] = '\n';
-      else if ((c >= 127) || (c < ' '))
-	{
-	  str[j++] = '\\';
-	  str[j++] = 'x';
-	  str[j++] = "0123456789abcdef"[(c >> 4) & 15];
-	  str[j++] = "0123456789abcdef"[(c >> 0) & 15];
-	}
-      else
-	str[j++] = (char)c;
-    }
-  str[j++] = '\0';
-  fprintf(stderr,
-	  "\033[00;01;35m(start of transmission on next line)\n"
-	  "\033[00;35m%s"
-	  "\033[00;01;35m(end of transmission)\033[00m\n",
-	  str);
-  free(str);
-}
-#endif
-
-
 /**
  * Send a message over an HTTP socket
  * 
@@ -345,6 +402,14 @@ int libqwaitclient_http_socket_receive(_this_)
       libqwaitclient_http_socket_disconnect(this);
       errno = saved_errno;
     }
+#ifdef VERBOSE_DEBUG
+  if (r == 0)
+    {
+      saved_errno = errno;
+      dump_message(this);
+      errno = saved_errno;
+    }
+#endif
   return r;
 }
 
