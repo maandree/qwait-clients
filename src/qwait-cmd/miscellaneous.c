@@ -82,7 +82,7 @@ int print_qwait_version(_sock_)
  */
 int print_user_login(_sock_)
 {
-  libqwaitclient_authentication_t* auth_;
+  libqwaitclient_authentication_t* auth_ = NULL;
   libqwaitclient_authentication_t auth;
   libqwaitclient_login_information_t login;
   size_t i, n;
@@ -91,8 +91,7 @@ int print_user_login(_sock_)
   /* Acquire authentication information. */
   r = get_authentication(&auth);
   if      (r < 0)   goto fail;
-  else if (r == 1)  auth_ = NULL;
-  else              auth_ = &auth;
+  else if (r == 0)  auth_ = &auth;
   
   libqwaitclient_login_information_initialise(&login);
   if (r = libqwaitclient_qwait_get_login_information(sock, auth_, &login), r)
@@ -112,6 +111,8 @@ int print_user_login(_sock_)
   
  fail:
   saved_errno = errno;
+  if (auth_)
+    libqwaitclient_authentication_destroy(auth_);
   libqwaitclient_login_information_destroy(&login);
   return errno = saved_errno, r;
 }
