@@ -113,7 +113,7 @@ static void dump_message(const _this_)
   n = strlen(this->message.top) + 2;
   for (i = 0; i < this->message.header_count; i++)
     n += strlen(this->message.headers[i]) + 2;
-  n = 2 + this->message.content_size;
+  n += 2 + this->message.content_size;
   str = malloc((n * 4 + 1) * sizeof(char));
   if (str == NULL)
     {
