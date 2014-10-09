@@ -190,7 +190,6 @@ int main(int argc_, char** argv_)
   else if (argeq2("stat", "login", 2))                                   action_stat_login = 1;
   else
     goto invalid_command;
-  /* TODO test action_set_wait, action_set_comment and action_set_location upon others. */
   
 #undef e
 #undef x
