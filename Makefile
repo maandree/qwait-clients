@@ -63,6 +63,10 @@ QWAIT_CMD_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CMD_CFLAGS = -Isrc
 QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication user users miscellaneous
 
+QWAIT_CURSES_LIBFLAGS = -lqwaitclient -Lbin
+QWAIT_CURSES_CFLAGS = -Isrc
+QWAIT_CURSES_OBJ = qwait-curses terminal
+
 ifeq ($(USE_LIBPASSPHRASE),y)
 QWAIT_CMD_LIBFLAGS += -lpassphrase
 C_FLAGS += -DUSE_LIBPASSPHRASE
@@ -72,7 +76,7 @@ endif
 # Build rules.
 
 .PHONY: all
-all: libqwaitclient qwait-cmd
+all: libqwaitclient qwait-cmd qwait-curses
 
 
 .PHONY: libqwaitclient
@@ -101,6 +105,18 @@ obj/qwait-cmd/%.o: src/qwait-cmd/%.c src/qwait-cmd/*.h
 bin/qwait-cmd: $(foreach O,$(QWAIT_CMD_OBJ),obj/qwait-cmd/$(O).o) bin/libqwaitclient.so
 	@mkdir -p bin
 	$(CC) $(LD_FLAGS) $(QWAIT_CMD_LIBFLAGS) $^ -o $@
+
+
+.PHONY: qwait-curses
+qwait-curses: bin/qwait-curses
+
+obj/qwait-curses/%.o: src/qwait-curses/%.c src/qwait-curses/*.h
+	@mkdir -p obj/qwait-curses
+	$(CC) $(C_FLAGS) $(QWAIT_CURSES_CFLAGS) -c $< -o $@
+
+bin/qwait-curses: $(foreach O,$(QWAIT_CURSES_OBJ),obj/qwait-curses/$(O).o) bin/libqwaitclient.so
+	@mkdir -p bin
+	$(CC) $(LD_FLAGS) $(QWAIT_CURSES_LIBFLAGS) $^ -o $@
 
 
 # Clean rules.
