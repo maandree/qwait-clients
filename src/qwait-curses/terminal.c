@@ -21,6 +21,34 @@
 #include <unistd.h>
 
 
+
+/**
+ * This varible is set to non-zero when the terminal
+ * ha been resized, once you detect this you should
+ * reset it to zero
+ * 
+ * This variable will only be updated if
+ * `catch_terminal_resize_signal` has retured
+ * successfully
+ */
+volatile sig_atomic_t terminal_resized = 0;
+
+
+
+/**
+ * This function is caleld when the terminal is
+ * resized if `catch_terminal_resize_signal` has
+ * returned successfully
+ */
+#include <stdio.h>
+static void sig_winch(int signo)
+{
+  (void) signo;
+  terminal_resized = 1;
+}
+
+
+
 /**
  * Get the new size of the terminal
  * 
@@ -36,5 +64,26 @@ int update_terminal_size(size_t* restrict terminal_width, size_t* restrict termi
   *terminal_width  = (size_t)(terminal_size.ws_col);
   *terminal_height = (size_t)(terminal_size.ws_row);
   return 0;
+}
+
+
+/**
+ * Configure blocking functions to get interrupted
+ * when the terminal is resized, and for `terminal_resized`
+ * to be set on said event
+ * 
+ * @return  Zero on success, -1 on error
+ */
+int catch_terminal_resize_signal(void)
+{
+  struct sigaction action;
+  sigset_t sigset;
+  
+  sigemptyset(&sigset);
+  action.sa_handler = sig_winch;
+  action.sa_mask = sigset;
+  action.sa_flags = 0;
+  
+  return sigaction(SIGWINCH, &action, NULL);
 }
 

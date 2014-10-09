@@ -18,7 +18,26 @@
 #ifndef QWAIT_CURSES_TERMINAL_H
 #define QWAIT_CURSES_TERMINAL_H
 
+#define _GNU_SOURCE
+/* _GNU_SOURCE is need for `signal` to have permanent effect,
+ * but since we need to use _GNU_SOURCE we might as well upgrade
+ * to sigaction. */
+
 #include <stddef.h>
+#include <signal.h>
+
+
+
+/**
+ * This varible is set to non-zero when the terminal
+ * ha been resized, once you detect this you should
+ * reset it to zero
+ * 
+ * This variable will only be updated if
+ * `catch_terminal_resize_signal` has retured
+ * successfully
+ */
+extern volatile sig_atomic_t terminal_resized;
 
 
 /**
@@ -29,6 +48,15 @@
  * @return                   Zero on success, -1 on error
  */
 int update_terminal_size(size_t* restrict terminal_width, size_t* restrict terminal_height);
+
+/**
+ * Configure blocking functions to get interrupted
+ * when the terminal is resized, and for `terminal_resized`
+ * to be set on said event
+ * 
+ * @return  Zero on success, -1 on error
+ */
+int catch_terminal_resize_signal(void);
 
 
 #endif

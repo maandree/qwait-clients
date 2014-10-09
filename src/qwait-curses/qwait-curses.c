@@ -18,6 +18,7 @@
 #include "terminal.h"
 
 #include <stdio.h>
+#include <unistd.h>
 
 
 
@@ -29,9 +30,25 @@ int main(int argc, char** argv)
   (void) argc;
   
   if (update_terminal_size(&terminal_width, &terminal_height) < 0)
-    perror(*argv);
+    return perror(*argv), 1;
+  
   printf("%zu, %zu\n", terminal_width, terminal_height);
   
-  return 0;
+  if (catch_terminal_resize_signal() < 0)
+    return perror(*argv), 1;
+  
+  for (;;)
+    {
+      pause();
+      
+      if (terminal_resized == 0)
+	continue;
+      terminal_resized = 0;
+      
+      if (update_terminal_size(&terminal_width, &terminal_height) < 0)
+	return perror(*argv), 1;
+      
+      printf("%zu, %zu\n", terminal_width, terminal_height);
+    }
 }
 
