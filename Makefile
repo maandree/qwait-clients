@@ -65,7 +65,7 @@ QWAIT_CMD_OBJ = qwait-cmd globals queues queue authentication user users miscell
 
 QWAIT_CURSES_LIBFLAGS = -lqwaitclient -Lbin
 QWAIT_CURSES_CFLAGS = -Isrc
-QWAIT_CURSES_OBJ = qwait-curses terminal
+QWAIT_CURSES_OBJ = qwait-curses terminal globals
 
 ifeq ($(USE_LIBPASSPHRASE),y)
 QWAIT_CMD_LIBFLAGS += -lpassphrase

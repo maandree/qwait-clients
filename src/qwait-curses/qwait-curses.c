@@ -15,30 +15,132 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "globals.h"
 #include "terminal.h"
 
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 
 
-int main(int argc, char** argv)
+/**
+ * Restore the terminals original settings
+ */
+static void restore_terminal(void)
 {
-  size_t terminal_width = 80;
-  size_t terminal_height = 24;
+  show_cursor();
+}
+
+
+/**
+ * Fork the process and continue as the child process,
+ * the parent process will wait for the child process
+ * to die, than restore the terminal's original settings
+ * by invoking `restore_terminal` and then attempt to
+ * die with the same signal as the child process or
+ * (if unsuccessful or not killed by a signal) die with
+ * the same exit value by returing the appropriate value
+ * and let the caller return the same value
+ * 
+ * @return  NB! -1 if the program should continue normally,
+ *          non-negative if the program should exit with the
+ *          returned value as the program's exit value
+ */
+static int guard_terminal_settings(void)
+{
+  int status, saved_errno, signo;
+  pid_t pid, reaped;
   
-  (void) argc;
+  /* Fork or die. */
+  if (pid = fork(), pid == -1)
+    return perror(*argv), 1;
+  
+  /* The child process should continue normally. */
+  if (pid == 0)
+    return -1;
+  
+  /* Parent process: they as the child, but cleanup after it first. */
+  for (;;)
+    {
+      /* Signals may not kill us, unless they are
+         unsuppressible, we especially do not want
+         to die of SIGINT.
+	 We do this before each wait, because
+	 `signal` does not have permanent effect
+	 in all libc:s. */
+      for (signo = 1; signo < _NSIG; signo++)
+	if (signo != SIGCHLD) /* We need SIGCHLD to wait for it. */
+	  signal(signo, SIG_IGN);
+      
+      /* Wait for the child process to die. */
+      reaped = waitpid(pid, &status, 0);
+      if ((reaped == pid) || ((reaped == -1) && (errno != EINTR)))
+	{
+	  /* Restore the terminal settings. */
+	  saved_errno = errno;
+	  restore_terminal();
+	  flush();
+	  errno = saved_errno;
+	  
+	  /* Error (not interruption), die. */
+	  if (reaped == -1)
+	    return perror(*argv), 1;
+	  
+	  /* Return with the same exit value as the child process. */
+	  if (WIFEXITED(status))
+	    return WEXITSTATUS(status);
+	  
+	  /* Signals may kill us again, we want to die
+	     with the same signal as the child process. */
+	  for (signo = 1; signo < _NSIG; signo++)
+	    signal(signo, SIG_DFL);
+	  
+	  /* Die with the same signal as the child process,
+	     or if not possible, with that signal's number
+	     as our exit value. */
+	  raise(WTERMSIG(status));
+	  return WTERMSIG(status);
+	}
+    }
+}
+
+
+/**
+ * "curses" client for qwait
+ * 
+ * @param   argc_  The number of elements in `argv_`
+ * @param   argv_  Command line arguments, including the command name
+ * @return         Zero on and only on success
+ */
+int main(int argc_, char** argv_)
+{
+  size_t terminal_width;
+  size_t terminal_height;
+  int r;
+  
+  argc = argc_;
+  argv = argv_;
+  
+  if (r = guard_terminal_settings(), r >= 0)
+    return r;
+  
+  hide_cursor();
+  flush();
   
   if (update_terminal_size(&terminal_width, &terminal_height) < 0)
     return perror(*argv), 1;
-  
-  printf("%zu, %zu\n", terminal_width, terminal_height);
-  
   if (catch_terminal_resize_signal() < 0)
     return perror(*argv), 1;
   
   for (;;)
     {
+      printf("\033[H\033[2J\033[07m\033[%zu@\033[27m", terminal_width);
+      printf("\033[%zu;1H\033[07m\033[%zu@\033[27m", terminal_height, terminal_width);
+      flush();
+      
       pause();
       
       if (terminal_resized == 0)
@@ -47,8 +149,6 @@ int main(int argc, char** argv)
       
       if (update_terminal_size(&terminal_width, &terminal_height) < 0)
 	return perror(*argv), 1;
-      
-      printf("%zu, %zu\n", terminal_width, terminal_height);
     }
 }
 

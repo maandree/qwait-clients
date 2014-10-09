@@ -19,12 +19,9 @@
 #define QWAIT_CURSES_TERMINAL_H
 
 #define _GNU_SOURCE
-/* _GNU_SOURCE is need for `signal` to have permanent effect,
- * but since we need to use _GNU_SOURCE we might as well upgrade
- * to sigaction. */
-
 #include <stddef.h>
 #include <signal.h>
+#include <stdio.h>
 
 
 
@@ -57,6 +54,29 @@ int update_terminal_size(size_t* restrict terminal_width, size_t* restrict termi
  * @return  Zero on success, -1 on error
  */
 int catch_terminal_resize_signal(void);
+
+
+/**
+ * Flush the standard output stream to apply
+ * changes to the terminals settings
+ * 
+ * @return  See return value for `fflush`
+ */
+#define flush()  fflush(stdout)
+
+/**
+ * Tell the terminal to hide the text cursor
+ * 
+ * @return  See return value for `printf`
+ */
+#define hide_cursor()  printf("\033[?25l")
+
+/**
+ * Tell the terminal to show the text cursor
+ * 
+ * @return  See return value for `printf`
+ */
+#define show_cursor()  printf("\033[?25h")
 
 
 #endif

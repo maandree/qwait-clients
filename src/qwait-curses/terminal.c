@@ -21,6 +21,17 @@
 #include <unistd.h>
 
 
+/* _GNU_SOURCE (#define:d in "terminal.h") is need
+ * for `signal` to have permanent effect, but since
+ * we need to use _GNU_SOURCE we might as well
+ * upgrade to `sigaction`.
+ * 
+ * An alternative method would be to always call
+ * `signal(signo, sig_winch)` in `sig_winch`, however
+ * that complicates error handling for the `signal`
+ * function. */
+
+
 
 /**
  * This varible is set to non-zero when the terminal
