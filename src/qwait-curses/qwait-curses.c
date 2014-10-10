@@ -21,9 +21,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <termios.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
+
+/**
+ * The original TTY settings
+ */
+static struct termios saved_stty;
 
 
 /**
@@ -32,6 +38,8 @@
 static void restore_terminal(void)
 {
   show_cursor();
+  terminate_terminal();
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_stty);
 }
 
 
@@ -117,6 +125,7 @@ static int guard_terminal_settings(void)
  */
 int main(int argc_, char** argv_)
 {
+  struct termios stty;
   size_t terminal_width;
   size_t terminal_height;
   int r;
@@ -124,9 +133,15 @@ int main(int argc_, char** argv_)
   argc = argc_;
   argv = argv_;
   
+  tcgetattr(STDIN_FILENO, &stty);
+  saved_stty = stty;
+  
   if (r = guard_terminal_settings(), r >= 0)
     return r;
   
+  stty.c_lflag &= (tcflag_t)~(ECHO | ICANON);
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &stty);
+  initialise_terminal();
   hide_cursor();
   flush();
   
@@ -141,7 +156,8 @@ int main(int argc_, char** argv_)
       printf("\033[%zu;1H\033[07m\033[%zu@\033[27m", terminal_height, terminal_width);
       flush();
       
-      pause();
+      if (getchar() == 'q')
+	return 0;
       
       if (terminal_resized == 0)
 	continue;

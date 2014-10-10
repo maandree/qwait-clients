@@ -78,6 +78,19 @@ int catch_terminal_resize_signal(void);
  */
 #define show_cursor()  printf("\033[?25h")
 
+/**
+ * Initialise a subterminal
+ * 
+ * @return  See return value for `printf`
+ */
+#define initialise_terminal()  printf("\033[?1049h")
+
+/**
+ * Terminate the subterminal
+ * 
+ * @return  See return value for `printf`
+ */
+#define terminate_terminal()  printf("\033[?1049l")
 
 #endif
 
