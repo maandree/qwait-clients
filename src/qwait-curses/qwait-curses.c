@@ -18,6 +18,7 @@
 #include "globals.h"
 #include "terminal.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
@@ -141,6 +142,7 @@ int main(int argc_, char** argv_)
   
   stty.c_lflag &= (tcflag_t)~(ECHO | ICANON);
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &stty);
+  set_title("qwait-curses");
   initialise_terminal();
   hide_cursor();
   flush();
@@ -152,8 +154,12 @@ int main(int argc_, char** argv_)
   
   for (;;)
     {
-      printf("\033[H\033[2J\033[07m\033[%zu@\033[27m", terminal_width);
-      printf("\033[%zu;1H\033[07m\033[%zu@\033[27m", terminal_height, terminal_width);
+      printf(home()clear()reverse_video(insert_spaces(%zu)bold("qwait-curses")),
+	     terminal_width);
+      
+      printf(row(%zu)reverse_video(insert_spaces(%zu)),
+	     terminal_height, terminal_width);
+      
       flush();
       
       if (getchar() == 'q')

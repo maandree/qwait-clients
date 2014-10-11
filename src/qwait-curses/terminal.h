@@ -92,5 +92,21 @@ int catch_terminal_resize_signal(void);
  */
 #define terminate_terminal()  printf("\033[?1049l")
 
+/**
+ * Set the title on the terminal, but in the
+ * decoration and in the taskbar
+ * 
+ * @param   title  The title of the terminal
+ * @return         See return value for `printf`
+ */
+#define set_title(title)  printf("\033]0;%s\a", title)
+
+#define bold(text)  "\033[01m" text "\033[21m"
+#define reverse_video(text)  "\033[07m" text "\033[27m"
+#define clear() "\033[2J"
+#define home() "\033[H"
+#define row(num) "\033[" #num ";1H"
+#define insert_spaces(num) "\033[" #num "@"
+
 #endif
 
