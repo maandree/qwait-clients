@@ -340,8 +340,8 @@ int libqwaitclient_qwait_position_diff_time(const _this_, _time_, const struct t
  * Make a coarse human-readable string of the time created by
  * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
  * 
- * @param   time      The time the entry was added to the queue or how long ago that was
- * @return            The time information as a free:able string, `NULL` on error
+ * @param   time  The time the entry was added to the queue or how long ago that was
+ * @return        The time information as a free:able string, `NULL` on error
  */
 static char* libqwaitclient_qwait_position_coarse_string_time(const _time_)
 {
@@ -381,8 +381,8 @@ static char* libqwaitclient_qwait_position_coarse_string_time(const _time_)
  * Make a detailed human-readable string of the time created by
  * `libqwaitclient_qwait_position_parse_time` or `libqwaitclient_qwait_position_diff_time`
  * 
- * @param   time      The time the entry was added to the queue or how long ago that was
- * @return            The time information as a free:able string, `NULL` on error
+ * @param   time  The time the entry was added to the queue or how long ago that was
+ * @return        The time information as a free:able string, `NULL` on error
  */
 static char* libqwaitclient_qwait_position_detailed_string_time(const _time_)
 {
