@@ -158,7 +158,7 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
   this->host = host;
   this->port = port;
   this->inet_family = AF_INET;
-  this->socket_fd = 0;
+  this->socket_fd = -1;
   this->connected = 0;
   this->send_buffer = NULL;
   this->send_buffer_alloc = 0;
@@ -176,7 +176,7 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
   
  fail:
   saved_errno = errno;
-  this->socket_fd = 0;
+  this->socket_fd = -1;
   libqwaitclient_http_message_destroy(&(this->message));
   errno = saved_errno;
   return -1;
@@ -191,8 +191,8 @@ int libqwaitclient_http_socket_initialise(_this_, const char* host, uint16_t por
 void libqwaitclient_http_socket_destroy(_this_)
 {
   libqwaitclient_http_socket_disconnect(this);
-  if (this->socket_fd > 0)
-    close(this->socket_fd), this->socket_fd = 0;
+  if (this->socket_fd >= 0)
+    close(this->socket_fd), this->socket_fd = -1;
   free(this->send_buffer), this->send_buffer = NULL;
   this->send_buffer_ptr = this->send_buffer_size = this->send_buffer_alloc = 0;
   libqwaitclient_http_message_destroy(&(this->message));
