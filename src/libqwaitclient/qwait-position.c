@@ -220,21 +220,18 @@ int libqwaitclient_qwait_position_parse_time(const _this_, _time_, int local)
     sprintf(time->timezone, "UTC");
   else
     {
-      struct timeval _time; /* First argument of gettimeofday must not be `NULL`. */
-      struct timezone tz_;
-      int tz;
+      time_t universal_time = s;
+      struct tm local_time;
+      long tz;
       
-      if (gettimeofday(&_time, &tz_) < 0)
-	return -1;
-      tz = -(tz_.tz_minuteswest);
-      tzset();
-      sprintf(time->timezone, "%s", tzname[((-timezone) / 60 == tz) ? 0 : 1]);
-      /* Someone choose to invert it, probably because it is faster
-         to do TIME - TZ than TIME + TZ to get the local time.
-         (Or because they are America-centric, just like when having
-	 Sunday be the first day of the week.) */
+      /* Get timezone. */
+      localtime_r(&universal_time, &local_time);
+      
+      /* Copy timezone acronym. */
+      sprintf(time->timezone, "%s", local_time.tm_zone);
       
       /* Timezone offset */
+      tz = local_time.tm_gmtoff / 60;
       tz *= time->sign = tz < 0 ? -1 : tz > 0 ? 1 : 0;
       time->timezone_h = (unsigned)tz / 60;
       time->timezone_m = (unsigned)tz % 60;
