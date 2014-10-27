@@ -139,11 +139,11 @@ int libqwaitclient_http_socket_send(_this_, const libqwaitclient_http_message_t*
  * The receive message will be stored to `this->message`
  * 
  * @param   this  The HTTP socket
- * @return        Non-zero on error or interruption, errno will be
+ * @return        Non-zero on error or interruption, `errno` will be
  *                set accordingly. Destroy the message on error,
  *                be aware that the reading could have been
  *                interrupted by a signal rather than canonical error.
- *                If -2 is returned errno will not have been set,
+ *                If -2 is returned `errno` will not have been set,
  *                -2 indicates that the message is malformated,
  *                which is a state that cannot be recovered from.
  */
