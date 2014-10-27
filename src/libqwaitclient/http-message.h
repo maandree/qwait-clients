@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBQWAITCLIENT_MESSAGE_H
-#define LIBQWAITCLIENT_MESSAGE_H
+#ifndef LIBQWAITCLIENT_HTTP_MESSAGE_H
+#define LIBQWAITCLIENT_HTTP_MESSAGE_H
 
 
 #define _GNU_SOURCE
