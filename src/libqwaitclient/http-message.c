@@ -379,11 +379,11 @@ static int receive_known_length(_this_)
       size_t need = this->content_size - this->content_ptr;
       /* How much we have of that what is needed. */
       size_t move = min(this->buffer_ptr, need);
-	      
+      
       /* Copy what we have, and remove it from the the read buffer. */
       memcpy(this->content + this->content_ptr, this->buffer, move * sizeof(char));
       unbuffer_beginning(this, move, 1);
-	      
+      
       /* Keep track of how much we have read. */
       this->content_ptr += move;
     }
@@ -523,7 +523,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
 	  if (p == NULL)
 	    goto need_more;
 	  
-	  /* Verift that the line is CRLF-terminated. */
+	  /* Verify that the line is CRLF-terminated. */
 	  length = (size_t)(p - this->buffer);
 	  if ((length > 0) && (*(p - 1) == '\r'))
 	    length--;
@@ -543,7 +543,7 @@ int libqwaitclient_http_message_read(_this_, int fd)
       while ((this->stage == 1) &&
 	     ((p = memchr(this->buffer, '\n', this->buffer_ptr * sizeof(char))) != NULL))
 	{
-	  /* Verift that the line is CRLF-terminated. */
+	  /* Verify that the line is CRLF-terminated. */
 	  length = (size_t)(p - this->buffer);
 	  if ((length > 0) && (*(p - 1) == '\r'))
 	    length--;
