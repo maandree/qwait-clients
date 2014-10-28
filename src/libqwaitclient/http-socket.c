@@ -395,21 +395,15 @@ int libqwaitclient_http_socket_send(_this_, const libqwaitclient_http_message_t*
  */
 int libqwaitclient_http_socket_receive(_this_)
 {
-  int r, saved_errno;
-  r = libqwaitclient_http_message_read(&(this->message), this->socket_fd);
+  int r = libqwaitclient_http_message_read(&(this->message), this->socket_fd);
   if ((r == -1) && (errno == ECONNRESET))
     {
-      saved_errno = errno;
       libqwaitclient_http_socket_disconnect(this);
-      errno = saved_errno;
+      errno = ECONNRESET;
     }
 #ifdef VERBOSE_DEBUG
   if (r == 0)
-    {
-      saved_errno = errno;
-      dump_message(this);
-      errno = saved_errno;
-    }
+    dump_message(this);
 #endif
   return r;
 }

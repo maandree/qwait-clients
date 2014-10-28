@@ -225,13 +225,11 @@ int libqwaitclient_websocket_send(_this_, const libqwaitclient_webmessage_t* res
  */
 int libqwaitclient_websocket_receive(_this_)
 {
-  int r, saved_errno;
-  r = libqwaitclient_webmessage_read(&(this->message), this->socket_fd);
+  int r = libqwaitclient_webmessage_read(&(this->message), this->socket_fd);
   if ((r == -1) && (errno == ECONNRESET))
     {
-      saved_errno = errno;
       libqwaitclient_websocket_disconnect(this);
-      errno = saved_errno;
+      errno = ECONNRESET;
     }
   return r;
 }
