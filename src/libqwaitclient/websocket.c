@@ -45,7 +45,7 @@ int libqwaitclient_websocket_handshake(_http_socket_, const char* restrict bus)
 {
   /* TODO libqwaitclient_websocket_handshake */
   /*
-    GET /bus/client/292/ulpxgl50/websocket HTTP/1.1\r\n -- /292/ulpxgl50 seems random
+    GET /bus/client/???/????????/websocket HTTP/1.1\r\n -- /???/???????? seems random
     Upgrade: websocket\r\n
     Connection: Upgrade\r\n
     Host: qwait.csc.kth.se\r\n
