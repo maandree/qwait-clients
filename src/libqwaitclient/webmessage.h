@@ -23,6 +23,9 @@
 #include <stddef.h>
 
 
+/* Note: This is for client-side WebSocket:s only, and its uses lax rules. */
+
+
 /**
  * Message passed between the server and the client over a websocket
  */
@@ -58,6 +61,38 @@ typedef struct libqwaitclient_webmessage
    */
   size_t buffer_ptr;
   
+  /**
+   * The parsring stage (internal data)
+   * 
+   * - 0: Acquire the first byte of the message
+   * - 1: Acquire the length of the payload
+   * - 2: Acquire the payload
+   * - 3: Done, reset and start on next fragment
+   * 
+   * The step if acquiring the mask is omitted
+   * because we assume (since we are receiving
+   * a message from a server) that their is no
+   * mask.
+   */
+  int stage;
+  
+  /**
+   * Whether this is the final fragment in a frame
+   */
+  int final;
+  
+  /**
+   * The opcode for the frame
+   * 
+   * - 0:  Continuation frame
+   * - 1:  Text frame
+   * - 2:  Binary frame
+   * - 8:  Close connection
+   * - 9:  Ping frame (heartbeat)
+   * - 10: Pong frame (heartbeat response)
+   */
+  int opcode;
+  
 } libqwaitclient_webmessage_t;
 
 
@@ -80,9 +115,9 @@ void libqwaitclient_webmessage_zero_initialise(_this_);
 void libqwaitclient_webmessage_destroy(_this_);
 
 /**
- * Read the next message from a file descriptor
+ * Read the next fragment from a file descriptor
  * 
- * @param   this  Memory slot in which to store the new message
+ * @param   this  Memory slot in which to store the new fragment
  * @param   fd    The file descriptor
  * @return        Non-zero on error or interruption, errno will be
  *                set accordingly. Destroy the message on error,
