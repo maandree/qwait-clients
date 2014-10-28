@@ -22,7 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 #include <sys/socket.h>
+#include <time.h>
 
 
 #define _this_ libqwaitclient_webmessage_t* restrict this
@@ -277,9 +279,10 @@ int libqwaitclient_webmessage_read(_this_, int fd)
  */
 size_t libqwaitclient_webmessage_compose_size(const _this_)
 {
-  /* TODO libqwaitclient_webmessage_compose_size */
-  (void) this;
-  return 0;
+  size_t rc = 2 + 4 + this->content_size;
+  if (this->content_size > 125)
+    rc += (this->content_size >= (size_t)(1L << 16)) ? 8 : 2;
+  return rc;
 }
 
 
@@ -291,9 +294,55 @@ size_t libqwaitclient_webmessage_compose_size(const _this_)
  */
 void libqwaitclient_webmessage_compose(const _this_, char* restrict data)
 {
-  /* TODO libqwaitclient_webmessage_compose */
-  (void) this;
-  (void) data;
+  static int seeded = 0;
+  int size_byte = 0;
+  uint32_t random_int = 0;
+  char* random_chars;
+  size_t i;
+  
+  /* Select mask. */
+  if (!seeded)
+    {
+      i = (size_t)time(NULL) ^ (size_t)(void*)data ^ (size_t)(const void*)this;
+      srandom((unsigned int)i);
+      seeded = 1;
+    }
+  random_int = (uint32_t)random(); /* returns long int, so at least 32 bits. */
+  random_chars = (char*)(&random_int);
+  
+  /* Write FIN-bit, opcode, mask-bit and payload length. */
+  if (this->content_size > 125)
+    size_byte = (this->content_size >= (size_t)(1L << 16)) ? 127 : 126;
+  *data++ = (char)((this->final ? 0x80 : 0x00) | this->opcode);
+  *data++ = (char)((size_byte ? size_byte : (int)(this->content_size)) | 0x80);
+  if (size_byte >= 126)
+    {
+      *data++ = (char)((this->content_size >> 0) & 255);
+      *data++ = (char)((this->content_size >> 8) & 255);
+    }
+  if (size_byte == 127)
+    {
+      *data++ = (char)((this->content_size >> 16) & 255);
+      *data++ = (char)((this->content_size >> 24) & 255);
+      *data++ = (char)((this->content_size >> 32) & 255);
+      *data++ = (char)((this->content_size >> 40) & 255);
+      *data++ = (char)((this->content_size >> 48) & 255);
+      *data++ = (char)((this->content_size >> 56) & 255);
+    }
+  
+  /* Copy mask. */
+  *(uint32_t*)data = random_int;
+  data += 4;
+  
+  /* Copy payload. */
+  memcpy(data, this->content, this->content_size * sizeof(char));
+
+  /* Mask payload. */
+  for (i = 0; i < this->content_size; i += 4)
+    *(uint32_t*)data ^= random_int, data += 4;
+  if (i > this->content_size)
+    for (i -= 4; i < this->content_size; i++)
+      data[i] ^= random_chars[i];
 }
 
 
