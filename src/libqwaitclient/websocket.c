@@ -144,7 +144,7 @@ void libqwaitclient_websocket_disconnect(_this_)
 int libqwaitclient_websocket_send(_this_, const libqwaitclient_webmessage_t* restrict message)
 {
 #define length  (this->send_buffer_size - this->send_buffer_ptr)
-
+  
   size_t block_size;
   
   /* You may only send one message at a time, and you need to send a message. */
@@ -232,6 +232,7 @@ int libqwaitclient_websocket_receive(_this_)
       errno = ECONNRESET;
     }
   return r;
+  /* TODO implement multiple fragment support, automatic ponging, ignoring pongs and connection closing */
 }
 
 
